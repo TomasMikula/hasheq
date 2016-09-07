@@ -7,7 +7,7 @@ import scala.language.higherKinds
 import org.scalacheck.{Arbitrary, Gen, Properties}
 import org.scalacheck.Prop.forAll
 
-/** Witness that `S[A]` represents an inmutable set of elements of type `A`. */
+/** Witness that `S[A]` represents an immutable set of elements of type `A`. */
 trait SetRepr[S[_], A] {
 
   def empty: S[A]
@@ -44,11 +44,11 @@ trait SetRepr[S[_], A] {
     else                    retain(s1, !contains(s2, _))
   def symDiff(s1: S[A], s2: S[A]): (S[A], S[A]) = (diff(s1, s2), diff(s2, s1))
 
-  def equal(s1: S[A], s2: S[A]): Boolean =
+  def equiv(s1: S[A], s2: S[A]): Boolean =
     size(s1) == size(s2) && subset(s1, s2)
 
-  def contentEquality: Eq[S[A]] = new Eq[S[A]] {
-    def equal(s1: S[A], s2: S[A]): Boolean = SetRepr.this.equal(s1, s2)
+  def contentEquivalence: Equiv[S[A]] = new Equiv[S[A]] {
+    def equiv(s1: S[A], s2: S[A]): Boolean = SetRepr.this.equiv(s1, s2)
   }
 }
 
@@ -75,49 +75,49 @@ object SetRepr {
      */
 
     def unionIdempotence[S[_], A](s: S[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.union(s, s), s)
+      S.equiv(S.union(s, s), s)
 
     def intersectIdempotence[S[_], A](s: S[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.intersect(s, s), s)
+      S.equiv(S.intersect(s, s), s)
 
     def unionCommutativity[S[_], A](s: S[A], t: S[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.union(s, t), S.union(t, s))
+      S.equiv(S.union(s, t), S.union(t, s))
 
     def intersectCommutativity[S[_], A](s: S[A], t: S[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.intersect(s, t), S.intersect(t, s))
+      S.equiv(S.intersect(s, t), S.intersect(t, s))
 
     def unionAssociativity[S[_], A](s: S[A], t: S[A], u: S[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.union(S.union(s, t), u), S.union(s, S.union(t, u)))
+      S.equiv(S.union(S.union(s, t), u), S.union(s, S.union(t, u)))
 
     def intersectAssociativity[S[_], A](s: S[A], t: S[A], u: S[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.intersect(S.intersect(s, t), u), S.intersect(s, S.intersect(t, u)))
+      S.equiv(S.intersect(S.intersect(s, t), u), S.intersect(s, S.intersect(t, u)))
 
     def absorption[S[_], A](s: S[A], t: S[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.intersect(s, S.union(s, t)), s) &&
-      S.equal(S.union(s, S.intersect(s, t)), s)
+      S.equiv(S.intersect(s, S.union(s, t)), s) &&
+      S.equiv(S.union(s, S.intersect(s, t)), s)
 
     def empty[S[_], A](s: S[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.union(s, S.empty), s) &&
-      S.equal(S.intersect(s, S.empty), S.empty)
+      S.equiv(S.union(s, S.empty), s) &&
+      S.equiv(S.intersect(s, S.empty), S.empty)
 
     def distributivity[S[_], A](s: S[A], t: S[A], u: S[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.intersect(s, S.union(t, u)), S.union(S.intersect(s, t), S.intersect(s, u))) &&
-      S.equal(S.union(s, S.intersect(t, u)), S.intersect(S.union(s, t), S.union(s, u)))
+      S.equiv(S.intersect(s, S.union(t, u)), S.union(S.intersect(s, t), S.intersect(s, u))) &&
+      S.equiv(S.union(s, S.intersect(t, u)), S.intersect(S.union(s, t), S.union(s, u)))
 
     def relativeComplement[S[_], A](s: S[A], t: S[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.union(S.diff(s, t), S.intersect(s, t)), s) &&
-      S.equal(S.intersect(S.diff(s, t), S.intersect(s, t)), S.empty)
+      S.equiv(S.union(S.diff(s, t), S.intersect(s, t)), s) &&
+      S.equiv(S.intersect(S.diff(s, t), S.intersect(s, t)), S.empty)
 
 
     /* Remaining operations. */
 
     def symDiff[S[_], A](s: S[A], t: S[A])(implicit S: SetRepr[S, A]): Boolean = {
       val (l, r) = S.symDiff(s, t)
-      S.equal(l, S.diff(s, t)) && S.equal(r, S.diff(t, s))
+      S.equiv(l, S.diff(s, t)) && S.equiv(r, S.diff(t, s))
     }
 
     def subset[S[_], A](s: S[A], t: S[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.subset(s, t) == S.equal(S.intersect(s, t), s)
+      S.subset(s, t) == S.equiv(S.intersect(s, t), s)
 
     def size[S[_], A](s: S[A], t: S[A])(implicit S: SetRepr[S, A]): Boolean =
       S.size(s) + S.size(t) == S.size(S.union(s, t)) + S.size(S.intersect(s, t))
@@ -133,7 +133,7 @@ object SetRepr {
 
     def foldLeft[S[_], A](s: S[A])(implicit S: SetRepr[S, A]): Boolean = {
       val (t, n) = S.foldLeft(s)((S.empty, 0))((acc, a) => (S.add(acc._1, a), acc._2 + 1))
-      S.equal(t, s) && n == S.size(s)
+      S.equiv(t, s) && n == S.size(s)
     }
 
     def forall[S[_], A](s: S[A], p: A => Boolean)(implicit S: SetRepr[S, A]): Boolean =
@@ -142,7 +142,7 @@ object SetRepr {
     def exists[S[_], A](s: S[A], p: A => Boolean)(implicit S: SetRepr[S, A]): Boolean =
       S.exists(s, p) == S.foldLeft(s)(false)((b, a) => b || p(a))
 
-    def containsAll[S[_], A](s: S[A])(implicit S: SetRepr[S, A], A: Eq[A]): Boolean =
+    def containsAll[S[_], A](s: S[A])(implicit S: SetRepr[S, A], A: Equiv[A]): Boolean =
       S.forall(s, S.contains(s, _))
 
     def fromIterable[S[_], A](col: Iterable[A])(implicit S: SetRepr[S, A]): Boolean = {
@@ -150,35 +150,35 @@ object SetRepr {
         case a :: as => fromList(as, S.add(acc, a))
         case Nil => acc
       }
-      S.equal(S.fromIterable(col), fromList(col.toList, S.empty))
+      S.equiv(S.fromIterable(col), fromList(col.toList, S.empty))
     }
 
     def fromIterator[S[_], A](col: Iterable[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.fromIterator(col.iterator), S.fromIterable(col))
+      S.equiv(S.fromIterator(col.iterator), S.fromIterable(col))
 
     def toList[S[_], A](s: S[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.fromIterable(S.toList(s)), s)
+      S.equiv(S.fromIterable(S.toList(s)), s)
 
     def singleton[S[_], A](a: A)(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.singleton(a), S.add(S.empty, a))
+      S.equiv(S.singleton(a), S.add(S.empty, a))
 
     def addAll[S[_], A](s: S[A], col: Iterable[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.addAll(s, col), S.union(s, S.fromIterable(col)))
+      S.equiv(S.addAll(s, col), S.union(s, S.fromIterable(col)))
 
     def addAllIterator[S[_], A](s: S[A], col: Iterable[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.addAll(s, col.iterator), S.union(s, S.fromIterable(col)))
+      S.equiv(S.addAll(s, col.iterator), S.union(s, S.fromIterable(col)))
 
     def removeAll[S[_], A](s: S[A], col: Iterable[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.removeAll(s, col), S.diff(s, S.fromIterable(col)))
+      S.equiv(S.removeAll(s, col), S.diff(s, S.fromIterable(col)))
 
     def removeAllIterator[S[_], A](s: S[A], col: Iterable[A])(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.removeAll(s, col.iterator), S.diff(s, S.fromIterable(col)))
+      S.equiv(S.removeAll(s, col.iterator), S.diff(s, S.fromIterable(col)))
 
     def retain[S[_], A](s: S[A], p: A => Boolean)(implicit S: SetRepr[S, A]): Boolean =
-      S.equal(S.retain(s, p), S.fromIterable(S.toList(s).filter(p)))
+      S.equiv(S.retain(s, p), S.fromIterable(S.toList(s).filter(p)))
   }
 
-  def properties[S[_], A](name: String = "SetRepr")(implicit S: SetRepr[S, A], EA: Eq[A], A: Arbitrary[A], PA: Arbitrary[A => Boolean]): Properties =
+  def properties[S[_], A](name: String = "SetRepr")(implicit S: SetRepr[S, A], EA: Equiv[A], A: Arbitrary[A], PA: Arbitrary[A => Boolean]): Properties =
     new Properties(name) {
       val laws = new Laws {}
 

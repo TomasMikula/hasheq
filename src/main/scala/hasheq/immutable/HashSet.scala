@@ -34,7 +34,7 @@ sealed class HashSet[A] extends Iterable[A]
    *              The value of level is 0 for a top-level HashSet and grows in increments of 5
    * @return true if all elements of this set are contained in that set
    */
-  protected def subsetOf0(that: HashSet[A], level: Int)(implicit A: Eq[A]): Boolean = true // emtpy set is subset of any set
+  protected def subsetOf0(that: HashSet[A], level: Int)(implicit A: Equiv[A]): Boolean = true // emtpy set is subset of any set
 
   def + (e: A)(implicit A: HashEq[A]): HashSet[A] = updated0(e, computeHash(e), 0)
 
@@ -66,7 +66,7 @@ sealed class HashSet[A] extends Iterable[A]
    * @return The union of this and that at the given level. Unless level is zero, the result is not a self-contained
    *         HashSet but needs to be stored at the correct depth
    */
-  private[immutable] def union0(that: LeafHashSet[A], level: Int)(implicit A: Eq[A]): HashSet[A] = {
+  private[immutable] def union0(that: LeafHashSet[A], level: Int)(implicit A: Equiv[A]): HashSet[A] = {
     // the default implementation is for the empty set, so we just return that
     that
   }
@@ -80,7 +80,7 @@ sealed class HashSet[A] extends Iterable[A]
    * @return The union of this and that at the given level. Unless level is zero, the result is not a self-contained
    *         HashSet but needs to be stored at the correct depth
    */
-  private[immutable] def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Eq[A]): HashSet[A] = {
+  private[immutable] def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Equiv[A]): HashSet[A] = {
     // the default implementation is for the empty set, so we just return that
     that
   }
@@ -93,7 +93,7 @@ sealed class HashSet[A] extends Iterable[A]
    * @return The intersection of this and that at the given level. Unless level is zero, the result is not a
    *         self-contained HashSet but needs to be stored at the correct depth
    */
-  private[immutable] def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Eq[A]): HashSet[A] = {
+  private[immutable] def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Equiv[A]): HashSet[A] = {
     // the default implementation is for the empty set, so we just return the empty set
     null
   }
@@ -106,7 +106,7 @@ sealed class HashSet[A] extends Iterable[A]
    * @return The diff of this and that at the given level. Unless level is zero, the result is not a
    *         self-contained HashSet but needs to be stored at the correct depth
    */
-  private[immutable] def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Eq[A]): HashSet[A] = {
+  private[immutable] def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Equiv[A]): HashSet[A] = {
     // the default implementation is for the empty set, so we just return the empty set
     null
   }
@@ -137,12 +137,12 @@ sealed class HashSet[A] extends Iterable[A]
 
   private[hasheq] def computeHash(key: A)(implicit A: HashEq[A]) = improve(elemHashCode(key))
 
-  protected def get0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): Boolean = false
+  protected def get0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): Boolean = false
 
-  private[hasheq] def updated0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): HashSet[A] =
+  private[hasheq] def updated0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashSet[A] =
     new HashSet.HashSet1(key, hash)
 
-  protected def removed0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): HashSet[A] = this
+  protected def removed0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashSet[A] = this
 }
 
 object HashSet {
@@ -199,10 +199,10 @@ object HashSet {
   class HashSet1[A](private[HashSet] val key: A, private[HashSet] val hash: Int) extends LeafHashSet[A] {
     override def size = 1
 
-    override protected def get0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): Boolean =
-      (hash == this.hash && A.equal(key, this.key))
+    override protected def get0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): Boolean =
+      (hash == this.hash && A.equiv(key, this.key))
 
-    override protected def subsetOf0(that: HashSet[A], level: Int)(implicit A: Eq[A]) = {
+    override protected def subsetOf0(that: HashSet[A], level: Int)(implicit A: Equiv[A]) = {
       // check if that contains this.key
       // we use get0 with our key and hash at the correct level instead of calling contains,
       // which would not work since that might not be a top-level HashSet
@@ -210,8 +210,8 @@ object HashSet {
       that.get0(key, hash, level)
     }
 
-    override private[hasheq] def updated0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): HashSet[A] =
-      if (hash == this.hash && A.equal(key, this.key)) this
+    override private[hasheq] def updated0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashSet[A] =
+      if (hash == this.hash && A.equiv(key, this.key)) this
       else {
         if (hash != this.hash) {
           makeHashTrieSet(this.hash, this, hash, new HashSet1(key, hash), level)
@@ -221,13 +221,13 @@ object HashSet {
         }
       }
 
-    override private[immutable] def union0(that: LeafHashSet[A], level: Int)(implicit A: Eq[A]): HashSet[A] = that match {
+    override private[immutable] def union0(that: LeafHashSet[A], level: Int)(implicit A: Equiv[A]): HashSet[A] = that match {
       case that if that.hash != this.hash =>
         // different hash code, so there is no need to investigate further.
         // Just create a branch node containing the two.
         makeHashTrieSet(this.hash, this, that.hash, that, level)
       case that: HashSet1[A] =>
-        if (A.equal(this.key, that.key)) {
+        if (A.equiv(this.key, that.key)) {
           this
         } else {
           // 32-bit hash collision (rare, but not impossible)
@@ -243,20 +243,20 @@ object HashSet {
         }
     }
 
-    override private[immutable] def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Eq[A]) = {
+    override private[immutable] def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Equiv[A]) = {
       // switch to the Leaf version of union
       // we can exchange the arguments because union is symmetrical
       that.union0(this, level)
     }
 
-    override private[immutable] def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Eq[A]): HashSet[A] =
+    override private[immutable] def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Equiv[A]): HashSet[A] =
       if (that.get0(key, hash, level)) this else null
 
-    override private[immutable] def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Eq[A]): HashSet[A] =
+    override private[immutable] def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Equiv[A]): HashSet[A] =
       if (that.get0(key, hash, level)) null else this
 
-    override protected def removed0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): HashSet[A] =
-      if (hash == this.hash && A.equal(key, this.key)) null else this
+    override protected def removed0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashSet[A] =
+      if (hash == this.hash && A.equiv(key, this.key)) null else this
 
     override protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] =
       if (negate ^ p(key)) this else null
@@ -269,10 +269,10 @@ object HashSet {
 
     override def size = ks.size
 
-    override protected def get0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): Boolean =
+    override protected def get0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): Boolean =
       if (hash == this.hash) ks.contains(key) else false
 
-    override protected def subsetOf0(that: HashSet[A], level: Int)(implicit A: Eq[A]) = {
+    override protected def subsetOf0(that: HashSet[A], level: Int)(implicit A: Equiv[A]) = {
       // we have to check each element
       // we use get0 with our hash at the correct level instead of calling contains,
       // which would not work since that might not be a top-level HashSet
@@ -280,11 +280,11 @@ object HashSet {
       ks.forall(key => that.get0(key, hash, level))
     }
 
-    override private[hasheq] def updated0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): HashSet[A] =
+    override private[hasheq] def updated0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashSet[A] =
       if (hash == this.hash) new HashSetCollision1(hash, ks + key)
       else makeHashTrieSet(this.hash, this, hash, new HashSet1(key, hash), level)
 
-    override private[immutable] def union0(that: LeafHashSet[A], level: Int)(implicit A: Eq[A]): HashSet[A] = that match {
+    override private[immutable] def union0(that: LeafHashSet[A], level: Int)(implicit A: Equiv[A]): HashSet[A] = that match {
       case that if that.hash != this.hash =>
         // different hash code, so there is no need to investigate further.
         // Just create a branch node containing the two.
@@ -317,7 +317,7 @@ object HashSet {
         }
     }
 
-    override private[immutable] def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Eq[A]): HashSet[A] = that match {
+    override private[immutable] def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Equiv[A]): HashSet[A] = that match {
       case that: LeafHashSet[A] =>
         // switch to the simpler Tree/Leaf implementation
         this.union0(that, level)
@@ -328,7 +328,7 @@ object HashSet {
       case _ => this
     }
 
-    override private[immutable] def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Eq[A]): HashSet[A] = {
+    override private[immutable] def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Equiv[A]): HashSet[A] = {
       // filter the keys, taking advantage of the fact that we know their hash code
       val ks1 = ks.filter(that.get0(_, hash, level))
       ks1.size match {
@@ -354,7 +354,7 @@ object HashSet {
       }
     }
 
-    override private[immutable] def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Eq[A]): HashSet[A] = {
+    override private[immutable] def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Equiv[A]): HashSet[A] = {
       val ks1 = ks.filterNot(that.get0(_, hash, level))
       ks1.size match {
         case 0 =>
@@ -374,7 +374,7 @@ object HashSet {
       }
     }
 
-    override protected def removed0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): HashSet[A] =
+    override protected def removed0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashSet[A] =
       if (hash == this.hash) {
         val ks1 = ks - key
         ks1.size match {
@@ -456,7 +456,7 @@ object HashSet {
 
     override def size = size0
 
-    override protected def get0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): Boolean = {
+    override protected def get0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): Boolean = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       if (bitmap == - 1) {
@@ -468,7 +468,7 @@ object HashSet {
         false
     }
 
-    override private[hasheq] def updated0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): HashSet[A] = {
+    override private[hasheq] def updated0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashSet[A] = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
@@ -492,7 +492,7 @@ object HashSet {
       }
     }
 
-    override private[immutable] def union0(that: LeafHashSet[A], level: Int)(implicit A: Eq[A]): HashSet[A] = {
+    override private[immutable] def union0(that: LeafHashSet[A], level: Int)(implicit A: Equiv[A]): HashSet[A] = {
       val index = (that.hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask - 1))
@@ -516,7 +516,7 @@ object HashSet {
       }
     }
 
-    override private[immutable] def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Eq[A]): HashSet[A] = that match {
+    override private[immutable] def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Equiv[A]): HashSet[A] = that match {
       case that if that eq this =>
         // shortcut for when that is this
         // this happens often for nodes deeper in the tree, especially when that and this share a common "heritage"
@@ -596,7 +596,7 @@ object HashSet {
       case _ => this
     }
 
-    override private[immutable] def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Eq[A]): HashSet[A] = that match {
+    override private[immutable] def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Equiv[A]): HashSet[A] = that match {
       case that if that eq this =>
         // shortcut for when that is this
         // this happens often for nodes deeper in the tree, especially when that and this share a common "heritage"
@@ -686,7 +686,7 @@ object HashSet {
       case _ => null
     }
 
-    override private[immutable] def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Eq[A]): HashSet[A] = that match {
+    override private[immutable] def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int)(implicit A: Equiv[A]): HashSet[A] = that match {
       case that if that eq this =>
         // shortcut for when that is this
         // this happens often for nodes deeper in the tree, especially when that and this share a common "heritage"
@@ -770,7 +770,7 @@ object HashSet {
       case _ => this
     }
 
-    override protected def removed0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): HashSet[A] = {
+    override protected def removed0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashSet[A] = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
@@ -807,7 +807,7 @@ object HashSet {
       }
     }
 
-    override protected def subsetOf0(that: HashSet[A], level: Int)(implicit A: Eq[A]): Boolean = if (that eq this) true else that match {
+    override protected def subsetOf0(that: HashSet[A], level: Int)(implicit A: Equiv[A]): Boolean = if (that eq this) true else that match {
       case that: HashTrieSet[A] if this.size0 <= that.size0 =>
         // create local mutable copies of members
         var abm = this.bitmap

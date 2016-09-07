@@ -35,12 +35,12 @@ private[hasheq] sealed class ListSet[A] extends Iterable[A] {
   override def size: Int = 0
   override def isEmpty: Boolean = true
 
-  def contains(elem: A)(implicit A: Eq[A]): Boolean = false
+  def contains(elem: A)(implicit A: Equiv[A]): Boolean = false
 
-  def +(elem: A)(implicit A: Eq[A]): ListSet[A] = new Node(elem)
-  def -(elem: A)(implicit A: Eq[A]): ListSet[A] = this
+  def +(elem: A)(implicit A: Equiv[A]): ListSet[A] = new Node(elem)
+  def -(elem: A)(implicit A: Equiv[A]): ListSet[A] = this
 
-  def ++(xs: scala.collection.GenTraversableOnce[A])(implicit A: Eq[A]): ListSet[A] =
+  def ++(xs: scala.collection.GenTraversableOnce[A])(implicit A: Equiv[A]): ListSet[A] =
     if (xs.isEmpty) this
     else xs.foldLeft(this) (_ + _)
 
@@ -89,18 +89,18 @@ private[hasheq] sealed class ListSet[A] extends Iterable[A] {
 
     override def isEmpty: Boolean = false
 
-    override def contains(e: A)(implicit A: Eq[A]) = containsInternal(this, e)
+    override def contains(e: A)(implicit A: Equiv[A]) = containsInternal(this, e)
 
-    @tailrec private[this] def containsInternal(n: ListSet[A], e: A)(implicit A: Eq[A]): Boolean =
-      !n.isEmpty && (A.equal(n.elem, e) || containsInternal(n.next, e))
+    @tailrec private[this] def containsInternal(n: ListSet[A], e: A)(implicit A: Equiv[A]): Boolean =
+      !n.isEmpty && (A.equiv(n.elem, e) || containsInternal(n.next, e))
 
-    override def +(e: A)(implicit A: Eq[A]): ListSet[A] = if (contains(e)) this else new Node(e)
+    override def +(e: A)(implicit A: Equiv[A]): ListSet[A] = if (contains(e)) this else new Node(e)
 
-    override def -(e: A)(implicit A: Eq[A]): ListSet[A] = removeInternal(e, this, Nil)
+    override def -(e: A)(implicit A: Equiv[A]): ListSet[A] = removeInternal(e, this, Nil)
 
-    @tailrec private[this] def removeInternal(k: A, cur: ListSet[A], acc: List[ListSet[A]])(implicit A: Eq[A]): ListSet[A] =
+    @tailrec private[this] def removeInternal(k: A, cur: ListSet[A], acc: List[ListSet[A]])(implicit A: Equiv[A]): ListSet[A] =
       if (cur.isEmpty) acc.last
-      else if (A.equal(k, cur.elem)) (cur.next /: acc) { case (t, h) => new t.Node(h.elem) }
+      else if (A.equiv(k, cur.elem)) (cur.next /: acc) { case (t, h) => new t.Node(h.elem) }
       else removeInternal(k, cur.next, cur :: acc)
 
     override protected def next: ListSet[A] = ListSet.this

@@ -51,7 +51,7 @@ private[hasheq] trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     var curEntry = table(h)
     while (null != curEntry) {
       val curElem = entryToElem(curEntry)
-      if (A.equal(curElem, elem)) return Some(curElem)
+      if (A.equiv(curElem, elem)) return Some(curElem)
       h = (h + 1) % table.length
       curEntry = table(h)
     }
@@ -79,7 +79,7 @@ private[hasheq] trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     var curEntry = table(h)
     while (null != curEntry) {
       val curElem = entryToElem(curEntry)
-      if (A.equal(curElem, newElem)) return false
+      if (A.equiv(curElem, newElem)) return false
       h = (h + 1) % table.length
       curEntry = table(h)
       //Statistics.collisions += 1
@@ -107,7 +107,7 @@ private[hasheq] trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     var curEntry = table(h)
     while (null != curEntry) {
       val curElem = entryToElem(curEntry)
-      if (A.equal(curElem, elem)) {
+      if (A.equiv(curElem, elem)) {
         var h0 = h
         var h1 = (h0 + 1) % table.length
         while (null != table(h1)) {

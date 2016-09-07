@@ -284,7 +284,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   /* End of size map handling code */
 
-  protected def elemEquals(key1: A, key2: A)(implicit A: HashEq[A]): Boolean = A.equal(key1, key2)
+  protected def elemEquals(key1: A, key2: A)(implicit A: HashEq[A]): Boolean = A.equiv(key1, key2)
 
   // Note:
   // we take the most significant bits of the hashcode, not the lower ones

@@ -75,12 +75,12 @@ sealed class HashMap[A, +B] extends Iterable[(A, B)]
 
   import HashMap.{Merger, MergeFunction, liftMerger}
 
-  private[hasheq] def get0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): Option[B] = None
+  private[hasheq] def get0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): Option[B] = None
 
-  private[hasheq] def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1])(implicit A: Eq[A]): HashMap[A, B1] =
+  private[hasheq] def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1])(implicit A: Equiv[A]): HashMap[A, B1] =
     new HashMap.HashMap1(key, hash, value, kv)
 
-  protected def removed0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): HashMap[A, B] = this
+  protected def removed0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashMap[A, B] = this
 
   def split: Seq[HashMap[A, B]] = Seq(this)
 
@@ -97,9 +97,9 @@ sealed class HashMap[A, +B] extends Iterable[(A, B)]
    *  @param that     the other hash map
    *  @param mergef   the merge function or null if the first key-value pair is to be picked
    */
-  def merged[B1 >: B](that: HashMap[A, B1])(mergef: MergeFunction[A, B1])(implicit A: Eq[A]): HashMap[A, B1] = merge0(that, 0, liftMerger(mergef))
+  def merged[B1 >: B](that: HashMap[A, B1])(mergef: MergeFunction[A, B1])(implicit A: Equiv[A]): HashMap[A, B1] = merge0(that, 0, liftMerger(mergef))
 
-  protected def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1])(implicit A: Eq[A]): HashMap[A, B1] = that
+  protected def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1])(implicit A: Equiv[A]): HashMap[A, B1] = that
 
 }
 
@@ -148,7 +148,7 @@ object HashMap {
     elems.foldLeft(empty[A, B])(_ + _)
 
   // utility method to create a HashTrieMap from two leaf HashMaps (HashMap1 or HashMapCollision1) with non-colliding hash code)
-  private def makeHashTrieMap[A, B](hash0:Int, elem0:HashMap[A, B], hash1:Int, elem1:HashMap[A, B], level:Int, size:Int)(implicit A: Eq[A]) : HashTrieMap[A, B] = {
+  private def makeHashTrieMap[A, B](hash0:Int, elem0:HashMap[A, B], hash1:Int, elem1:HashMap[A, B], level:Int, size:Int)(implicit A: Equiv[A]) : HashTrieMap[A, B] = {
     val index0 = (hash0 >>> level) & 0x1f
     val index1 = (hash1 >>> level) & 0x1f
     if(index0 != index1) {
@@ -177,11 +177,11 @@ object HashMap {
     private[hasheq] def getHash = hash
     private[hasheq] def computeHashFor(k: A)(implicit A: HashEq[A]) = computeHash(k)
 
-    override def get0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): Option[B] =
-      if (hash == this.hash && A.equal(key, this.key)) Some(value) else None
+    override def get0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): Option[B] =
+      if (hash == this.hash && A.equiv(key, this.key)) Some(value) else None
 
-    private[hasheq] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1])(implicit A: Eq[A]): HashMap[A, B1] =
-      if (hash == this.hash && A.equal(key, this.key)) {
+    private[hasheq] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1])(implicit A: Equiv[A]): HashMap[A, B1] =
+      if (hash == this.hash && A.equiv(key, this.key)) {
         if (merger eq null) {
           if (this.value.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this
           else new HashMap1(key, hash, value, kv)
@@ -200,8 +200,8 @@ object HashMap {
         }
       }
 
-    override def removed0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): HashMap[A, B] =
-      if (hash == this.hash && A.equal(key, this.key)) HashMap.empty[A,B] else this
+    override def removed0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashMap[A, B] =
+      if (hash == this.hash && A.equiv(key, this.key)) HashMap.empty[A,B] else this
 
     override protected def filter0(p: ((A, B)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[A, B @uV]], offset0: Int): HashMap[A, B] =
       if (negate ^ p(ensurePair)) this else null
@@ -210,7 +210,7 @@ object HashMap {
     override def foreach[U](f: ((A, B)) => U): Unit = f(ensurePair)
     // this method may be called multiple times in a multithreaded environment, but that's ok
     private[HashMap] def ensurePair: (A,B) = if (kv ne null) kv else { kv = (key, value); kv }
-    protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1])(implicit A: Eq[A]): HashMap[A, B1] = {
+    protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1])(implicit A: Equiv[A]): HashMap[A, B1] = {
       that.updated0(key, hash, level, value, kv, merger.flip)
     }
   }
@@ -221,10 +221,10 @@ object HashMap {
 
     override def size = kvs.size
 
-    override def get0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): Option[B] =
+    override def get0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): Option[B] =
       if (hash == this.hash) kvs.get(key) else None
 
-    private[hasheq] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1])(implicit A: Eq[A]): HashMap[A, B1] =
+    private[hasheq] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1])(implicit A: Equiv[A]): HashMap[A, B1] =
       if (hash == this.hash) {
         if ((merger eq null) || !kvs.contains(key)) new HashMapCollision1(hash, kvs.updated(key, value))
         else new HashMapCollision1(hash, kvs + merger((key, kvs(key)), kv))
@@ -233,7 +233,7 @@ object HashMap {
         makeHashTrieMap(this.hash, this, hash, that, level, size + 1)
       }
 
-    override def removed0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): HashMap[A, B] =
+    override def removed0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashMap[A, B] =
       if (hash == this.hash) {
         val kvs1 = kvs - key
         kvs1.size match {
@@ -271,7 +271,7 @@ object HashMap {
       def newhm(lm: ListMap[A, B @uV]) = new HashMapCollision1(hash, lm)
       List(newhm(x), newhm(y))
     }
-    protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1])(implicit A: Eq[A]): HashMap[A, B1] = {
+    protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1])(implicit A: Equiv[A]): HashMap[A, B1] = {
       // this can be made more efficient by passing the entire ListMap at once
       var m = that
       for (p <- kvs) m = m.updated0(p._1, this.hash, level, p._2, p, merger)
@@ -290,7 +290,7 @@ object HashMap {
 
     override def size = size0
 
-    override def get0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): Option[B] = {
+    override def get0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): Option[B] = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       if (bitmap == - 1) {
@@ -302,7 +302,7 @@ object HashMap {
         None
     }
 
-    private[hasheq] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1])(implicit A: Eq[A]): HashMap[A, B1] = {
+    private[hasheq] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1])(implicit A: Equiv[A]): HashMap[A, B1] = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
@@ -324,7 +324,7 @@ object HashMap {
       }
     }
 
-    override def removed0(key: A, hash: Int, level: Int)(implicit A: Eq[A]): HashMap[A, B] = {
+    override def removed0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashMap[A, B] = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
@@ -447,7 +447,7 @@ object HashMap {
       } else elems(0).split
     }
 
-    protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1])(implicit A: Eq[A]): HashMap[A, B1] = that match {
+    protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1])(implicit A: Equiv[A]): HashMap[A, B1] = that match {
       case hm: HashMap1[_, _] =>
         this.updated0(hm.key, hm.hash, level, hm.value.asInstanceOf[B1], hm.kv, merger)
       case hm: HashTrieMap[_, _] =>

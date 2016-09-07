@@ -38,18 +38,18 @@ private[hasheq] sealed class ListMap[A, +B] extends Iterable[(A, B)] {
 
   override def head: (A, B) = throw new NoSuchElementException("head of empty map")
 
-  def get(key: A)(implicit A: Eq[A]): Option[B] = None
+  def get(key: A)(implicit A: Equiv[A]): Option[B] = None
 
-  def contains(key: A)(implicit A: Eq[A]): Boolean = get(key).isDefined
+  def contains(key: A)(implicit A: Equiv[A]): Boolean = get(key).isDefined
 
-  def apply(key: A)(implicit A: Eq[A]): B = get(key).get
+  def apply(key: A)(implicit A: Equiv[A]): B = get(key).get
 
-  def updated[B1 >: B](key: A, value: B1)(implicit A: Eq[A]): ListMap[A, B1] = new Node[B1](key, value)
+  def updated[B1 >: B](key: A, value: B1)(implicit A: Equiv[A]): ListMap[A, B1] = new Node[B1](key, value)
 
-  def +[B1 >: B](kv: (A, B1))(implicit A: Eq[A]): ListMap[A, B1] = new Node[B1](kv._1, kv._2)
-  def -(key: A)(implicit A: Eq[A]): ListMap[A, B] = this
+  def +[B1 >: B](kv: (A, B1))(implicit A: Equiv[A]): ListMap[A, B1] = new Node[B1](kv._1, kv._2)
+  def -(key: A)(implicit A: Equiv[A]): ListMap[A, B] = this
 
-  def ++[B1 >: B](xs: Iterable[(A, B1)])(implicit A: Eq[A]): ListMap[A, B1] =
+  def ++[B1 >: B](xs: Iterable[(A, B1)])(implicit A: Equiv[A]): ListMap[A, B1] =
     if (xs.isEmpty) this
     else xs.foldLeft(this: ListMap[A, B1])(_ + _)
 
@@ -106,44 +106,44 @@ private[hasheq] sealed class ListMap[A, +B] extends Iterable[(A, B)] {
 
     override def isEmpty: Boolean = false
 
-    override def apply(k: A)(implicit A: Eq[A]): B1 = applyInternal(this, k)
+    override def apply(k: A)(implicit A: Equiv[A]): B1 = applyInternal(this, k)
 
     override def head: (A, B1) = (key, value)
 
-    @tailrec private[this] def applyInternal(cur: ListMap[A, B1], k: A)(implicit A: Eq[A]): B1 =
+    @tailrec private[this] def applyInternal(cur: ListMap[A, B1], k: A)(implicit A: Equiv[A]): B1 =
       if (cur.isEmpty) throw new NoSuchElementException("key not found: " + k)
-      else if (A.equal(k, cur.key)) cur.value
+      else if (A.equiv(k, cur.key)) cur.value
       else applyInternal(cur.next, k)
 
-    override def get(k: A)(implicit A: Eq[A]): Option[B1] = getInternal(this, k)
+    override def get(k: A)(implicit A: Equiv[A]): Option[B1] = getInternal(this, k)
 
-    @tailrec private[this] def getInternal(cur: ListMap[A, B1], k: A)(implicit A: Eq[A]): Option[B1] =
+    @tailrec private[this] def getInternal(cur: ListMap[A, B1], k: A)(implicit A: Equiv[A]): Option[B1] =
       if (cur.isEmpty) None
-      else if (A.equal(k, cur.key)) Some(cur.value)
+      else if (A.equiv(k, cur.key)) Some(cur.value)
       else getInternal(cur.next, k)
 
-    override def contains(k: A)(implicit A: Eq[A]): Boolean = containsInternal(this, k)
+    override def contains(k: A)(implicit A: Equiv[A]): Boolean = containsInternal(this, k)
 
-    @tailrec private[this] def containsInternal(cur: ListMap[A, B1], k: A)(implicit A: Eq[A]): Boolean =
+    @tailrec private[this] def containsInternal(cur: ListMap[A, B1], k: A)(implicit A: Equiv[A]): Boolean =
       if(cur.isEmpty) false
-      else if (A.equal(k, cur.key)) true
+      else if (A.equiv(k, cur.key)) true
       else containsInternal(cur.next, k)
 
-    override def updated[B2 >: B1](k: A, v: B2)(implicit A: Eq[A]): ListMap[A, B2] = {
+    override def updated[B2 >: B1](k: A, v: B2)(implicit A: Equiv[A]): ListMap[A, B2] = {
       val m = this - k
       new m.Node[B2](k, v)
     }
 
-    override def +[B2 >: B1](kv: (A, B2))(implicit A: Eq[A]): ListMap[A, B2] = {
+    override def +[B2 >: B1](kv: (A, B2))(implicit A: Equiv[A]): ListMap[A, B2] = {
       val m = this - kv._1
       new m.Node[B2](kv._1, kv._2)
     }
 
-    override def -(k: A)(implicit A: Eq[A]): ListMap[A, B1] = removeInternal(k, this, Nil)
+    override def -(k: A)(implicit A: Equiv[A]): ListMap[A, B1] = removeInternal(k, this, Nil)
 
-    @tailrec private[this] def removeInternal(k: A, cur: ListMap[A, B1], acc: List[ListMap[A, B1]])(implicit A: Eq[A]): ListMap[A, B1] =
+    @tailrec private[this] def removeInternal(k: A, cur: ListMap[A, B1], acc: List[ListMap[A, B1]])(implicit A: Equiv[A]): ListMap[A, B1] =
       if (cur.isEmpty) acc.last
-      else if (A.equal(k, cur.key)) (cur.next /: acc) { case (t, h) => new t.Node(h.key, h.value) }
+      else if (A.equiv(k, cur.key)) (cur.next /: acc) { case (t, h) => new t.Node(h.key, h.value) }
       else removeInternal(k, cur.next, cur :: acc)
 
     override protected def next: ListMap[A, B1] = ListMap.this
