@@ -2,7 +2,7 @@ package hasheq
 package immutable
 
 import HashMap.{ HashTrieMap, HashMapCollision1, HashMap1 }
-import HashSet.{ HashTrieSet, HashSetCollision1, HashSet1 }
+import HashSetoid.{ HashTrieSetoid, HashSetoidCollision1, HashSetoid1 }
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
 import scala.annotation.tailrec
 
@@ -30,22 +30,22 @@ private[hasheq] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) exten
 
   private[this] def getElems(x: Iterable[T]): Array[Iterable[T]] = (x match {
     case x: HashTrieMap[_, _] => x.elems
-    case x: HashTrieSet[_]    => x.elems
+    case x: HashTrieSetoid[_, _]    => x.elems
   }).asInstanceOf[Array[Iterable[T]]]
 
   private[this] def collisionToArray(x: Iterable[T]): Array[Iterable[T]] = (x match {
     case x: HashMapCollision1[_, _] => x.kvs.iterator.map(kv => new HashMap1(kv._1, x.hash, kv._2, kv)).toArray
-    case x: HashSetCollision1[_]    => x.ks.iterator.map(k => new HashSet1(k, x.hash)).toArray
+    case x: HashSetoidCollision1[_, _]    => x.ks.iterator.map(k => new HashSetoid1(k, x.hash)).toArray
   }).asInstanceOf[Array[Iterable[T]]]
 
   private[this] type SplitIterators = ((Iterator[T], Int), Iterator[T])
 
   private def isTrie(x: AnyRef) = x match {
-    case _: HashTrieMap[_,_] | _: HashTrieSet[_] => true
+    case _: HashTrieMap[_,_] | _: HashTrieSetoid[_, _] => true
     case _                                       => false
   }
   private def isContainer(x: AnyRef) = x match {
-    case _: HashMap1[_, _] | _: HashSet1[_] => true
+    case _: HashMap1[_, _] | _: HashSetoid1[_, _] => true
     case _                                  => false
   }
 
@@ -77,7 +77,7 @@ private[hasheq] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) exten
   private[this] def splitArray(ad: Array[Iterable[T]]): SplitIterators =
     if (ad.length > 1) arrayToIterators(ad)
     else ad(0) match {
-      case _: HashMapCollision1[_, _] | _: HashSetCollision1[_] =>
+      case _: HashMapCollision1[_, _] | _: HashSetoidCollision1[_, _] =>
         arrayToIterators(collisionToArray(ad(0)))
       case _ =>
         splitArray(getElems(ad(0)))
