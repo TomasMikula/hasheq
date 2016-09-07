@@ -9,13 +9,13 @@ import scala.language.higherKinds
   */
 trait MapRepr[M[_, _], K] {
   def empty[V]: M[K, V]
-  def fromIterable[V](col: Iterable[(K, V)]): M[K, V] = fromIterator(col.iterator)
-  def fromIterator[V](it: Iterator[(K, V)]): M[K, V] =
+  def fromIterable[V](col: Iterable[(K, V)])(implicit E: Equal[K]): M[K, V] = fromIterator(col.iterator)
+  def fromIterator[V](it: Iterator[(K, V)])(implicit E: Equal[K]): M[K, V] =
     it.foldLeft(empty[V])((m, kv) => put(m, kv._1, kv._2))
 
   def size[V](m: M[K, V]): Int
   def isEmpty[V](m: M[K, V]): Boolean = size(m) == 0
-  def get[V](m: M[K, V], k: K): Option[V]
+  def get[V](m: M[K, V], k: K)(implicit E: Equal[K]): Option[V]
 
   def iterator[V](m: M[K, V]): Iterator[(K, V)]
   def keysIterator[V](m: M[K, V]): Iterator[K] = iterator(m).map(_._1)
@@ -27,8 +27,8 @@ trait MapRepr[M[_, _], K] {
 
   def keySet[S[_]](m: M[K, _]): KeySetBuilder[S] = KeySetBuilder()
 
-  def put[V](m: M[K, V], k: K, v: V): M[K, V]
-  def updated[V](m: M[K, V], k: K, v: V)(combine: (V, V) => V): M[K, V] = {
+  def put[V](m: M[K, V], k: K, v: V)(implicit E: Equal[K]): M[K, V]
+  def updated[V](m: M[K, V], k: K, v: V)(combine: (V, V) => V)(implicit E: Equal[K]): M[K, V] = {
     get(m, k) match {
       case Some(v0) => put(m, k, combine(v0, v))
       case None     => put(m, k, v)
@@ -36,6 +36,6 @@ trait MapRepr[M[_, _], K] {
   }
 
   final case class KeySetBuilder[S[_]]() {
-    def apply[S0[_, _]](m: M[K, _])(implicit ev: S0[K, Equal[K]] =:= S[K], S: Setoid[S0, K, Equal[K]]): S[K] = ev(S.fromIterator(keysIterator(m)))
+    def apply[S0[_, _]](m: M[K, _])(implicit ev: S0[K, Equal[K]] =:= S[K], S: Setoid[S0, K, Equal[K]], E: Equal[K]): S[K] = ev(S.fromIterator(keysIterator(m)))
   }
 }

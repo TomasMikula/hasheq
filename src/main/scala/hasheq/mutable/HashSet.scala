@@ -12,15 +12,15 @@ extends FlatHashTable[A]
 
   def size: Int = tableSize
 
-  def contains(elem: A)(implicit A: HashEq[A]): Boolean = containsElem(elem)
+  def contains(elem: A)(implicit A: HashEqual[A], E: Equal[A]): Boolean = containsElem(elem)
 
-  def += (elem: A)(implicit A: HashEq[A]): this.type = { addElem(elem); this }
+  def += (elem: A)(implicit A: HashEqual[A], E: Equal[A]): this.type = { addElem(elem); this }
 
-  def -= (elem: A)(implicit A: HashEq[A]): this.type = { removeElem(elem); this }
+  def -= (elem: A)(implicit A: HashEqual[A], E: Equal[A]): this.type = { removeElem(elem); this }
 
-  def add(elem: A)(implicit A: HashEq[A]): Boolean = addElem(elem)
+  def add(elem: A)(implicit A: HashEqual[A], E: Equal[A]): Boolean = addElem(elem)
 
-  def remove(elem: A)(implicit A: HashEq[A]): Boolean = removeElem(elem)
+  def remove(elem: A)(implicit A: HashEqual[A], E: Equal[A]): Boolean = removeElem(elem)
 
   def clear() = { clearTable() }
 
@@ -47,7 +47,7 @@ extends FlatHashTable[A]
 object HashSet {
   def empty[A]: HashSet[A] = new HashSet[A]
 
-  implicit def setReprInstance[A: HashEq]: SetRepr[HashSet, A] = new SetRepr[HashSet, A] {
+  implicit def setReprInstance[A: HashEqual: Equal]: SetRepr[HashSet, A] = new SetRepr[HashSet, A] {
     def empty: HashSet[A] = HashSet.empty[A]
 
     def size(s: HashSet[A]): Int = s.size

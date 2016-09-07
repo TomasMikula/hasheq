@@ -20,9 +20,9 @@ sealed class HashSetoid[A, Eq <: Equiv[A]] extends Iterable[A]
 
   override def foreach[U](f: A => U): Unit = ()
 
-  def contains(e: A)(implicit A: Eq with HashEq[A]): Boolean = get0(e, computeHash(e), 0)
+  def contains(e: A)(implicit A: Hash[A, Eq], E: Eq): Boolean = get0(e, computeHash(e), 0)
 
-  def subsetOf(that: HashSetoid[A, Eq])(implicit A: Eq with HashEq[A]): Boolean = subsetOf0(that, 0)
+  def subsetOf(that: HashSetoid[A, Eq])(implicit A: Hash[A, Eq], E: Eq): Boolean = subsetOf0(that, 0)
 
   /**
    * A specialized implementation of subsetOf for when both this and that are HashSet[A, Eq] and we can take advantage
@@ -34,27 +34,27 @@ sealed class HashSetoid[A, Eq <: Equiv[A]] extends Iterable[A]
    *              The value of level is 0 for a top-level HashSet and grows in increments of 5
    * @return true if all elements of this set are contained in that set
    */
-  protected def subsetOf0(that: HashSetoid[A, Eq], level: Int)(implicit A: Equiv[A]): Boolean = true // emtpy set is subset of any set
+  protected def subsetOf0(that: HashSetoid[A, Eq], level: Int)(implicit E: Eq): Boolean = true // emtpy set is subset of any set
 
-  def + (e: A)(implicit A: Eq with HashEq[A]): HashSetoid[A, Eq] = updated0(e, computeHash(e), 0)
+  def + (e: A)(implicit A: Hash[A, Eq], E: Eq): HashSetoid[A, Eq] = updated0(e, computeHash(e), 0)
 
-  def + (elem1: A, elem2: A, elems: A*)(implicit A: Eq with HashEq[A]): HashSetoid[A, Eq] =
+  def + (elem1: A, elem2: A, elems: A*)(implicit A: Hash[A, Eq], E: Eq): HashSetoid[A, Eq] =
     this + elem1 + elem2 ++ elems
 
-  def ++(that: Iterable[A])(implicit A: Eq with HashEq[A]): HashSetoid[A, Eq] =
+  def ++(that: Iterable[A])(implicit A: Hash[A, Eq], E: Eq): HashSetoid[A, Eq] =
     that.foldLeft(this)(_ + _)
 
-  def union(that: HashSetoid[A, Eq])(implicit A: Eq with HashEq[A]): HashSetoid[A, Eq] = {
+  def union(that: HashSetoid[A, Eq])(implicit A: Hash[A, Eq], E: Eq): HashSetoid[A, Eq] = {
     val buffer = new Array[HashSetoid[A, Eq]](bufferSize(this.size + that.size))
     nullToEmpty(union0(that, 0, buffer, 0))
   }
 
-  def intersect(that: HashSetoid[A, Eq])(implicit A: Eq with HashEq[A]): HashSetoid[A, Eq] = {
+  def intersect(that: HashSetoid[A, Eq])(implicit A: Hash[A, Eq], E: Eq): HashSetoid[A, Eq] = {
     val buffer = new Array[HashSetoid[A, Eq]](bufferSize(this.size min that.size))
     nullToEmpty(intersect0(that, 0, buffer, 0))
   }
 
-  def diff(that: HashSetoid[A, Eq])(implicit A: Eq with HashEq[A]): HashSetoid[A, Eq] = {
+  def diff(that: HashSetoid[A, Eq])(implicit A: Hash[A, Eq], E: Eq): HashSetoid[A, Eq] = {
     val buffer = new Array[HashSetoid[A, Eq]](bufferSize(this.size))
     nullToEmpty(diff0(that, 0, buffer, 0))
   }
@@ -111,7 +111,7 @@ sealed class HashSetoid[A, Eq <: Equiv[A]] extends Iterable[A]
     null
   }
 
-  def - (e: A)(implicit A: Eq with Eq with HashEq[A]): HashSetoid[A, Eq] =
+  def - (e: A)(implicit A: Hash[A, Eq], E: Eq): HashSetoid[A, Eq] =
     nullToEmpty(removed0(e, computeHash(e), 0))
 
   override def filter(p: A => Boolean) = {
@@ -126,7 +126,7 @@ sealed class HashSetoid[A, Eq <: Equiv[A]] extends Iterable[A]
 
   protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSetoid[A, Eq]], offset0: Int): HashSetoid[A, Eq] = null
 
-  protected def elemHashCode(key: A)(implicit A: Eq with HashEq[A]) = A.hash(key)
+  protected def elemHashCode(key: A)(implicit A: Hash[A, Eq]) = A.hash(key)
 
   protected final def improve(hcode: Int) = {
     var h: Int = hcode + ~(hcode << 9)
@@ -135,11 +135,11 @@ sealed class HashSetoid[A, Eq <: Equiv[A]] extends Iterable[A]
     h ^ (h >>> 10)
   }
 
-  private[hasheq] def computeHash(key: A)(implicit A: Eq with HashEq[A]) = improve(elemHashCode(key))
+  private[hasheq] def computeHash(key: A)(implicit A: Hash[A, Eq]) = improve(elemHashCode(key))
 
   protected def get0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): Boolean = false
 
-  private[hasheq] def updated0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashSetoid[A, Eq] =
+  private[hasheq] def updated0(key: A, hash: Int, level: Int)(implicit E: Eq): HashSetoid[A, Eq] =
     new HashSetoid.HashSetoid1(key, hash)
 
   protected def removed0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashSetoid[A, Eq] = this
@@ -147,13 +147,13 @@ sealed class HashSetoid[A, Eq <: Equiv[A]] extends Iterable[A]
 
 object HashSetoid {
 
-  implicit def setReprInstance[A, Eq <: Equiv[A]](implicit A: Eq with HashEq[A]): Setoid[HashSetoid, A, Eq] = new Setoid[HashSetoid, A, Eq] {
+  implicit def setReprInstance[A, Eq <: Equiv[A]](implicit A: Hash[A, Eq]): Setoid[HashSetoid, A, Eq] = new Setoid[HashSetoid, A, Eq] {
     def empty: HashSetoid[A, Eq] = HashSetoid.empty[A, Eq]
     def size(s: HashSetoid[A, Eq]): Int = s.size
-    def contains(s: HashSetoid[A, Eq], a: A): Boolean = s.contains(a)
+    def contains(s: HashSetoid[A, Eq], a: A)(implicit E: Eq): Boolean = s.contains(a)
     def iterator(s: HashSetoid[A, Eq]): Iterator[A] = s.iterator
-    def add(s: HashSetoid[A, Eq], a: A): HashSetoid[A, Eq] = s + a
-    def remove(s: HashSetoid[A, Eq], a: A): HashSetoid[A, Eq] = s - a
+    def add(s: HashSetoid[A, Eq], a: A)(implicit E: Eq): HashSetoid[A, Eq] = s + a
+    def remove(s: HashSetoid[A, Eq], a: A)(implicit E: Eq): HashSetoid[A, Eq] = s - a
   }
 
   private object EmptyHashSetoid extends HashSetoid[Any, Equiv[Any]] {
@@ -163,7 +163,7 @@ object HashSetoid {
   private[hasheq] def emptyInstance: HashSetoid[Any, Equiv[Any]] = EmptyHashSetoid
 
   def empty[A, Eq <: Equiv[A]]: HashSetoid[A, Eq] = EmptyHashSetoid.asInstanceOf[HashSetoid[A, Eq]]
-  def apply[A, Eq <: Equiv[A]](elems: A*)(implicit A: Eq with HashEq[A]): HashSetoid[A, Eq] = elems.foldLeft(empty[A, Eq])(_ + _)
+  def apply[A, Eq <: Equiv[A]](elems: A*)(implicit A: Hash[A, Eq], E: Eq): HashSetoid[A, Eq] = elems.foldLeft(empty[A, Eq])(_ + _)
 
   // utility method to create a HashTrieSet from two leaf HashSets (HashSet1 or HashSetCollision1) with non-colliding hash code)
   private def makeHashTrieSet[A, Eq <: Equiv[A]](hash0:Int, elem0:HashSetoid[A, Eq], hash1:Int, elem1:HashSetoid[A, Eq], level:Int) : HashTrieSetoid[A, Eq] = {
@@ -202,7 +202,7 @@ object HashSetoid {
     override protected def get0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): Boolean =
       (hash == this.hash && A.equiv(key, this.key))
 
-    override protected def subsetOf0(that: HashSetoid[A, Eq], level: Int)(implicit A: Equiv[A]) = {
+    override protected def subsetOf0(that: HashSetoid[A, Eq], level: Int)(implicit E: Eq) = {
       // check if that contains this.key
       // we use get0 with our key and hash at the correct level instead of calling contains,
       // which would not work since that might not be a top-level HashSet
@@ -210,8 +210,8 @@ object HashSetoid {
       that.get0(key, hash, level)
     }
 
-    override private[hasheq] def updated0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashSetoid[A, Eq] =
-      if (hash == this.hash && A.equiv(key, this.key)) this
+    override private[hasheq] def updated0(key: A, hash: Int, level: Int)(implicit E: Eq): HashSetoid[A, Eq] =
+      if (hash == this.hash && E.equiv(key, this.key)) this
       else {
         if (hash != this.hash) {
           makeHashTrieSet(this.hash, this, hash, new HashSetoid1(key, hash), level)
@@ -272,7 +272,7 @@ object HashSetoid {
     override protected def get0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): Boolean =
       if (hash == this.hash) ks.contains(key) else false
 
-    override protected def subsetOf0(that: HashSetoid[A, Eq], level: Int)(implicit A: Equiv[A]) = {
+    override protected def subsetOf0(that: HashSetoid[A, Eq], level: Int)(implicit E: Eq) = {
       // we have to check each element
       // we use get0 with our hash at the correct level instead of calling contains,
       // which would not work since that might not be a top-level HashSet
@@ -280,7 +280,7 @@ object HashSetoid {
       ks.forall(key => that.get0(key, hash, level))
     }
 
-    override private[hasheq] def updated0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashSetoid[A, Eq] =
+    override private[hasheq] def updated0(key: A, hash: Int, level: Int)(implicit E: Eq): HashSetoid[A, Eq] =
       if (hash == this.hash) new HashSetoidCollision1(hash, ks + key)
       else makeHashTrieSet(this.hash, this, hash, new HashSetoid1(key, hash), level)
 
@@ -468,7 +468,7 @@ object HashSetoid {
         false
     }
 
-    override private[hasheq] def updated0(key: A, hash: Int, level: Int)(implicit A: Equiv[A]): HashSetoid[A, Eq] = {
+    override private[hasheq] def updated0(key: A, hash: Int, level: Int)(implicit E: Eq): HashSetoid[A, Eq] = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
@@ -807,7 +807,7 @@ object HashSetoid {
       }
     }
 
-    override protected def subsetOf0(that: HashSetoid[A, Eq], level: Int)(implicit A: Equiv[A]): Boolean = if (that eq this) true else that match {
+    override protected def subsetOf0(that: HashSetoid[A, Eq], level: Int)(implicit E: Eq): Boolean = if (that eq this) true else that match {
       case that: HashTrieSetoid[A, Eq] if this.size0 <= that.size0 =>
         // create local mutable copies of members
         var abm = this.bitmap

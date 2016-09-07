@@ -64,10 +64,10 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   /** Find entry with given key in table, null if not found.
    */
-  protected final def findEntry(key: A)(implicit A: HashEq[A]): Entry =
+  protected final def findEntry(key: A)(implicit A: HashEqual[A], E: Equal[A]): Entry =
     findEntry0(key, index(elemHashCode(key)))
 
-  private[this] def findEntry0(key: A, h: Int)(implicit A: HashEq[A]): Entry = {
+  private[this] def findEntry0(key: A, h: Int)(implicit A: HashEqual[A], E: Equal[A]): Entry = {
     var e = table(h).asInstanceOf[Entry]
     while (e != null && !elemEquals(e.key, key)) e = e.next
     e
@@ -76,11 +76,11 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   /** Add entry to table
    *  pre: no entry with same key exists
    */
-  protected final def addEntry(e: Entry)(implicit A: HashEq[A]) = {
+  protected final def addEntry(e: Entry)(implicit A: HashEqual[A]) = {
     addEntry0(e, index(elemHashCode(e.key)))
   }
 
-  private[this] def addEntry0(e: Entry, h: Int)(implicit A: HashEq[A]) = {
+  private[this] def addEntry0(e: Entry, h: Int)(implicit A: HashEqual[A]) = {
     e.next = table(h).asInstanceOf[Entry]
     table(h) = e
     tableSize = tableSize + 1
@@ -95,7 +95,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
    *  Returns entry found in table or null.
    *  New entries are created by calling `createNewEntry` method.
    */
-  protected def findOrAddEntry[B](key: A, value: B)(implicit A: HashEq[A]): Entry = {
+  protected def findOrAddEntry[B](key: A, value: B)(implicit A: HashEqual[A], E: Equal[A]): Entry = {
     val h = index(elemHashCode(key))
     val e = findEntry0(key, h)
     if (e ne null) e else { addEntry0(createNewEntry(key, value), h); null }
@@ -109,7 +109,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   /** Remove entry from table if present.
    */
-  protected final def removeEntry(key: A)(implicit A: HashEq[A]) : Entry = {
+  protected final def removeEntry(key: A)(implicit A: HashEqual[A], E: Equal[A]) : Entry = {
     val h = index(elemHashCode(key))
     var e = table(h).asInstanceOf[Entry]
     if (e != null) {
@@ -183,7 +183,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     nnSizeMapReset(0)
   }
 
-  private def resize(newSize: Int)(implicit A: HashEq[A]) = {
+  private def resize(newSize: Int)(implicit A: HashEqual[A]) = {
     val oldTable = table
     table = new Array(newSize)
     nnSizeMapReset(table.length)
@@ -284,7 +284,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   /* End of size map handling code */
 
-  protected def elemEquals(key1: A, key2: A)(implicit A: HashEq[A]): Boolean = A.equiv(key1, key2)
+  protected def elemEquals(key1: A, key2: A)(implicit A: HashEqual[A], E: Equal[A]): Boolean = E.equiv(key1, key2)
 
   // Note:
   // we take the most significant bits of the hashcode, not the lower ones
@@ -335,7 +335,7 @@ private[hasheq] object HashTable {
     // so that:
     protected final def sizeMapBucketSize = 1 << sizeMapBucketBitSize
 
-    protected def elemHashCode(key: KeyType)(implicit he: HashEq[KeyType]) = he.hash(key)
+    protected def elemHashCode(key: KeyType)(implicit he: HashEqual[KeyType]) = he.hash(key)
 
     protected final def improve(hcode: Int, seed: Int) = {
       /* Murmur hash
