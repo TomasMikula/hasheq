@@ -23,7 +23,7 @@ object Equal {
   }
 
   def properties[A](name: String = "Equal", laws: Laws = new Laws {})(implicit E: Equal[A], A: Arbitrary[A], AI: Arbitrary[A => Int]): Properties = {
-    val p = Equiv.properties(name, laws)
+    val p = Equiv.properties(E, name, laws)
     import hasheq.std.int._
     p.property("substitutability") = forAll(laws.substitutability[A, Int] _)
     p

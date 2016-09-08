@@ -26,8 +26,10 @@ object Hash {
     protected def hash[A, Eq <: Equiv[A]](a: A)(implicit A: Hash[A, Eq]): Int = A.hash(a)
   }
 
-  def properties[A, Eq <: Equiv[A]](name: String = "HashEq", laws: Laws = new Laws {})(implicit H: Hash[A, Eq], E: Eq, A: Arbitrary[A]): Properties = {
-    val p = Equiv.properties(name, laws)
+  def properties[A, Eq <: Equiv[A]](h: Hash[A, Eq], name: String = "Hash", laws: Laws = new Laws {})(implicit E: Eq, A: Arbitrary[A]): Properties = {
+    implicit val hh = h
+
+    val p = Equiv.properties(E, name, laws)
     p.property("hashConsistency") = forAll(laws.hashConsistency[A, Eq] _)
     p
   }

@@ -1,6 +1,9 @@
 package hasheq
 package immutable
 
+import hasheq.immutable.Setoid.SetEquiv
+import org.scalacheck.Arbitrary
+
 import scala.annotation.tailrec
 
 /** This class implements immutable sets using a hash trie.
@@ -22,7 +25,7 @@ sealed class HashSetoid[A, Eq <: Equiv[A]] extends Iterable[A]
 
   def contains(e: A)(implicit A: Hash[A, Eq], E: Eq): Boolean = get0(e, computeHash(e), 0)
 
-  def subsetOf(that: HashSetoid[A, Eq])(implicit A: Hash[A, Eq], E: Eq): Boolean = subsetOf0(that, 0)
+  def subsetOf(that: HashSetoid[A, Eq])(implicit E: Eq): Boolean = subsetOf0(that, 0)
 
   /**
    * A specialized implementation of subsetOf for when both this and that are HashSet[A, Eq] and we can take advantage
@@ -147,7 +150,7 @@ sealed class HashSetoid[A, Eq <: Equiv[A]] extends Iterable[A]
 
 object HashSetoid {
 
-  implicit def setReprInstance[A, Eq <: Equiv[A]](implicit A: Hash[A, Eq]): Setoid[HashSetoid, A, Eq] = new Setoid[HashSetoid, A, Eq] {
+  implicit def setoidInstance[A, Eq <: Equiv[A]](implicit A: Hash[A, Eq]): Setoid[HashSetoid, A, Eq] = new Setoid[HashSetoid, A, Eq] {
     def empty: HashSetoid[A, Eq] = HashSetoid.empty[A, Eq]
     def size(s: HashSetoid[A, Eq]): Int = s.size
     def contains(s: HashSetoid[A, Eq], a: A)(implicit E: Eq): Boolean = s.contains(a)
@@ -155,6 +158,17 @@ object HashSetoid {
     def add(s: HashSetoid[A, Eq], a: A)(implicit E: Eq): HashSetoid[A, Eq] = s + a
     def remove(s: HashSetoid[A, Eq], a: A)(implicit E: Eq): HashSetoid[A, Eq] = s - a
   }
+
+  implicit def setEquivInstance[A, Eq <: Equiv[A]](implicit E: Eq): SetEquiv[HashSetoid, A, Eq] = new SetEquiv[HashSetoid, A, Eq] {
+    def equiv(s1: HashSetoid[A, Eq], s2: HashSetoid[A, Eq]): Boolean =
+      (s1.size == s2.size) && (s1 subsetOf s2)
+  }
+
+  implicit def hashInstance[A, Eq <: Equiv[A]](implicit A: Hash[A, Eq]): Hash[HashSetoid[A, Eq], SetEquiv[HashSetoid, A, Eq]] =
+    Setoid[HashSetoid, A, Eq].contentHash
+
+  implicit def arbitrary[A, Eq <: Equiv[A]](implicit S: Setoid[HashSetoid, A, Eq], A: Arbitrary[A], E: Eq): Arbitrary[HashSetoid[A, Eq]] =
+    Setoid.arbitrary
 
   private object EmptyHashSetoid extends HashSetoid[Any, Equiv[Any]] {
     override def head: Any = throw new NoSuchElementException("Empty Set")

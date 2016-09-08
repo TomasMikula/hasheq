@@ -23,8 +23,9 @@ object Equiv {
     protected def equiv[A: Equiv](a: A, b: A): Boolean = Equiv[A].equiv(a, b)
   }
 
-  def properties[A: Equiv: Arbitrary](name: String = "Equiv", laws: Laws = new Laws {}): Properties =
+  def properties[A: Arbitrary](e: Equiv[A], name: String = "Equiv", laws: Laws = new Laws {}): Properties =
     new Properties(name) {
+      implicit val ee: Equiv[A] = e
       property("reflexivity")  = forAll(laws.reflexivity[A] _)
       property("symmetry")     = forAll(laws.symmetry[A] _)
       property("transitivity") = forAll(laws.transitivity[A] _)

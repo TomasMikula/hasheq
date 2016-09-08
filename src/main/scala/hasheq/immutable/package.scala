@@ -8,6 +8,13 @@ package object immutable {
 
   type HashSet[A] = HashSetoid[A, Equal[A]]
 
+  object HashSet {
+    def empty[A]: HashSet[A] = HashSetoid.empty[A, Equal[A]]
+    def apply[A](elems: A*)(implicit A: Hash[A, Equal[A]], E: Equal[A]): HashSet[A] = HashSetoid(elems:_*)
+
+    def setoidInstance[A](implicit A: HashEqual[A]): Setoid[HashSetoid, A, Equal[A]] = HashSetoid.setoidInstance[A, Equal[A]]
+  }
+
   object SetRepr {
     def properties[S[_], A]: PropBuilder[S, A] = PropBuilder()
 

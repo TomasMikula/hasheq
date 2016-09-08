@@ -3,13 +3,13 @@ package immutable
 
 import scala.annotation.tailrec
 import scala.language.higherKinds
-
 import org.scalacheck.{Arbitrary, Gen, Properties}
 import org.scalacheck.Prop.forAll
 
 /** Witness that `S[A, Eq]` represents an immutable set of elements of type `A`
   * with respect to equivalence relation `Eq`. */
 trait Setoid[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]] {
+  import Setoid._
 
   def empty: S[A, Eq]
   def singleton(a: A)(implicit E: Eq): S[A, Eq] = add(empty, a)
@@ -48,13 +48,40 @@ trait Setoid[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]] {
   def equiv(s1: S[A, Eq], s2: S[A, Eq])(implicit E: Eq): Boolean =
     size(s1) == size(s2) && subset(s1, s2)
 
-  def contentEquivalence(implicit E: Eq): Equiv[S[A, Eq]] = new Equiv[S[A, Eq]] {
+  def contentEquivalence(implicit E: Eq): SetEquiv[S, A, Eq] = new SetEquiv[S, A, Eq] {
     def equiv(s1: S[A, Eq], s2: S[A, Eq]): Boolean = Setoid.this.equiv(s1, s2)
+  }
+
+  def contentHash(implicit H: Hash[A, Eq]): Hash[S[A, Eq], SetEquiv[S, A, Eq]] = new Hash[S[A, Eq], SetEquiv[S, A, Eq]] {
+    def hash(s: S[A, Eq]): Int = {
+      // Cannot take the order of elements into account, only what elements are present.
+
+      // Let's use the size and the 3 highest hash codes
+
+      val top = Array(Int.MinValue, Int.MinValue, Int.MinValue)
+      val n = top.length
+      val it = iterator(s)
+      while (it.hasNext) {
+        val h = H.hash(it.next())
+        if (h > top(0)) {
+          var i = 0
+          while (i+1 < n && top(i+1) < h) {
+            top(i) = top(i+1)
+            i += 1
+          }
+          top(i) = h
+        }
+      }
+
+      top.foldLeft(size(s))((acc, h) => 31 * acc + h)
+    }
   }
 }
 
 object Setoid {
   def apply[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](implicit ev: Setoid[S, A, Eq]): Setoid[S, A, Eq] = ev
+
+  trait SetEquiv[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]] extends Equiv[S[A, Eq]]
 
   implicit def arbitrary[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](implicit S: Setoid[S, A, Eq], A: Arbitrary[A], E: Eq): Arbitrary[S[A, Eq]] =
     Arbitrary {
