@@ -6,7 +6,8 @@ organization := "com.github.tomasmikula"
 
 scalaVersion := "2.11.8"
 
-addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.14")
+addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.8.2")
+addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.15")
 
 scalacOptions ++= Seq(
   "-Xlint",

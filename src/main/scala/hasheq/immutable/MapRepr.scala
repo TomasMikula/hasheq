@@ -25,7 +25,7 @@ trait MapRepr[M[_, _], K] {
   def keys[V](m: M[K, V]): Iterable[K] = new AbstractIterable[K] { def iterator = keysIterator(m) }
   def values[V](m: M[K, V]): Iterable[V] = new AbstractIterable[V] { def iterator = valuesIterator(m) }
 
-  def keySet[S[_]](m: M[K, _]): KeySetBuilder[S] = KeySetBuilder()
+  def keySet[S[_]](m: M[K, _])(implicit S: SetRepr[S, K], E: Equal[K]): S[K] = S.fromIterator(keysIterator(m))
 
   def put[V](m: M[K, V], k: K, v: V)(implicit E: Equal[K]): M[K, V]
   def updated[V](m: M[K, V], k: K, v: V)(combine: (V, V) => V)(implicit E: Equal[K]): M[K, V] = {
@@ -33,9 +33,5 @@ trait MapRepr[M[_, _], K] {
       case Some(v0) => put(m, k, combine(v0, v))
       case None     => put(m, k, v)
     }
-  }
-
-  final case class KeySetBuilder[S[_]]() {
-    def apply[S0[_, _]](m: M[K, _])(implicit ev: S0[K, Equality.type] =:= S[K], S: Setoid[S0, K, Equality.type], E: Equal[K]): S[K] = ev(S.fromIterator(keysIterator(m)))
   }
 }

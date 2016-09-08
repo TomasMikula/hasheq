@@ -21,7 +21,7 @@ class HashSetTest extends TestSuite {
   implicit object IntHashMod10 extends HashEq[Int, Mod10.type] {
     def hash(a: Int): Int = IntEqMod10.mod10(a)
   }
-  checkAll(Setoid.properties[HashSetoid, Int, Mod10.type]("Setoid[HashSetoid, Int, Mod10]"))
+  checkAll(Setoid.genProperties[HashSetoid, Int, Mod10.type]("Setoid[HashSetoid, Int, Mod10]"))
 
   // check that the equivalence on HashSet is lawful
   checkAll(Equiv.properties[HashSet[Int]]())

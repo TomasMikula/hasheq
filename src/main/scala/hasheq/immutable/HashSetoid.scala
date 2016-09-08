@@ -150,7 +150,9 @@ sealed class HashSetoid[A, Eq] extends Iterable[A]
 
 object HashSetoid {
 
-  implicit def setoidInstance[A, Eq](implicit A: HashEq[A, Eq]): Setoid[HashSetoid, A, Eq] = new Setoid[HashSetoid, A, Eq] {
+  implicit def setoidInstance[A, Eqv](implicit A: HashEq[A, Eqv]): Setoid.Generic[HashSetoid, A, Eqv] = new Setoid[HashSetoid[?, Eqv], A] {
+    type Eq = Eqv
+
     def empty: HashSetoid[A, Eq] = HashSetoid.empty[A, Eq]
     def size(s: HashSetoid[A, Eq]): Int = s.size
     def contains(s: HashSetoid[A, Eq], a: A)(implicit E: Equiv[A, Eq]): Boolean = s.contains(a)
@@ -167,8 +169,8 @@ object HashSetoid {
   implicit def hashInstance[A, Eq](implicit A: HashEq[A, Eq]): HashEq[HashSetoid[A, Eq], SetEquiv[A, Eq]] =
     Setoid[HashSetoid, A, Eq].contentHash
 
-  implicit def arbitrary[A, Eq](implicit S: Setoid[HashSetoid, A, Eq], A: Arbitrary[A], E: Equiv[A, Eq]): Arbitrary[HashSetoid[A, Eq]] =
-    Setoid.arbitrary
+  implicit def arbitrary[A, Eq](implicit S: Setoid.Generic[HashSetoid, A, Eq], A: Arbitrary[A], E: Equiv[A, Eq]): Arbitrary[HashSetoid[A, Eq]] =
+    Setoid.arbitrary[HashSetoid[?, Eq], A, Eq]
 
   private object EmptyHashSetoid extends HashSetoid[Any, Any] {
     override def head: Any = throw new NoSuchElementException("Empty Set")
