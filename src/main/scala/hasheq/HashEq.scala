@@ -18,6 +18,10 @@ trait HashEq[A, Eq] {
 object HashEq {
   def apply[A, Eq](implicit ev: HashEq[A, Eq]): HashEq[A, Eq] = ev
 
+  def apply[A, Eq](f: A => Int): HashEq[A, Eq] = new HashEq[A, Eq] {
+    def hash(a: A): Int = f(a)
+  }
+
   trait Laws extends Equiv.Laws {
     def hashConsistency[A, Eq](a: A, b: A)(implicit A: HashEq[A, Eq], E: Equiv[A, Eq]): Boolean =
       if(E.equiv(a, b)) hash(a) == hash(b)

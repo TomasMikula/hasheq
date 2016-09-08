@@ -18,6 +18,10 @@ trait Equiv[A, Eq] {
 object Equiv {
   def apply[A, Eq](implicit ev: Equiv[A, Eq]): Equiv[A, Eq] = ev
 
+  def apply[A, Eq](f: (A, A) => Boolean): Equiv[A, Eq] = new Equiv[A, Eq] {
+    def equiv(a: A, b: A): Boolean = f(a, b)
+  }
+
   trait Laws {
     def reflexivity[A, Eq](a: A)(implicit E: Equiv[A, Eq]): Boolean = equiv(a, a)
     def symmetry[A, Eq](a: A, b: A)(implicit E: Equiv[A, Eq]): Boolean = equiv(a, b) == equiv(b, a)
