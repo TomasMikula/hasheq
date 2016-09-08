@@ -36,6 +36,6 @@ trait MapRepr[M[_, _], K] {
   }
 
   final case class KeySetBuilder[S[_]]() {
-    def apply[S0[_, _]](m: M[K, _])(implicit ev: S0[K, Equal[K]] =:= S[K], S: Setoid[S0, K, Equal[K]], E: Equal[K]): S[K] = ev(S.fromIterator(keysIterator(m)))
+    def apply[S0[_, _]](m: M[K, _])(implicit ev: S0[K, Equality.type] =:= S[K], S: Setoid[S0, K, Equality.type], E: Equal[K]): S[K] = ev(S.fromIterator(keysIterator(m)))
   }
 }

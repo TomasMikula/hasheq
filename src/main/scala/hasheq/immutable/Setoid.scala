@@ -8,51 +8,51 @@ import org.scalacheck.Prop.forAll
 
 /** Witness that `S[A, Eq]` represents an immutable set of elements of type `A`
   * with respect to equivalence relation `Eq`. */
-trait Setoid[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]] {
+trait Setoid[S[_, _], A, Eq] {
   import Setoid._
 
   def empty: S[A, Eq]
-  def singleton(a: A)(implicit E: Eq): S[A, Eq] = add(empty, a)
-  def fromIterable(col: Iterable[A])(implicit E: Eq): S[A, Eq] = fromIterator(col.iterator)
-  def fromIterator(it: Iterator[A])(implicit E: Eq): S[A, Eq] = it.foldLeft(empty)(add(_, _))
+  def singleton(a: A)(implicit E: Equiv[A, Eq]): S[A, Eq] = add(empty, a)
+  def fromIterable(col: Iterable[A])(implicit E: Equiv[A, Eq]): S[A, Eq] = fromIterator(col.iterator)
+  def fromIterator(it: Iterator[A])(implicit E: Equiv[A, Eq]): S[A, Eq] = it.foldLeft(empty)(add(_, _))
 
   def size(s: S[A, Eq]): Int
   def isEmpty(s: S[A, Eq]): Boolean = size(s) == 0
-  def contains(s: S[A, Eq], a: A)(implicit E: Eq): Boolean
+  def contains(s: S[A, Eq], a: A)(implicit E: Equiv[A, Eq]): Boolean
   def iterator(s: S[A, Eq]): Iterator[A]
   def toList(s: S[A, Eq]): List[A] = iterator(s).toList
   def foldLeft[B](s: S[A, Eq])(b: B)(f: (B, A) => B): B = iterator(s).foldLeft(b)(f)
   def forall(s: S[A, Eq], p: A => Boolean): Boolean = iterator(s).forall(p)
   def exists(s: S[A, Eq], p: A => Boolean): Boolean = iterator(s).exists(p)
-  def subset(s1: S[A, Eq], s2: S[A, Eq])(implicit E: Eq): Boolean =
+  def subset(s1: S[A, Eq], s2: S[A, Eq])(implicit E: Equiv[A, Eq]): Boolean =
     size(s1) <= size(s2) && forall(s1, contains(s2, _))
 
-  def add(s: S[A, Eq], a: A)(implicit E: Eq): S[A, Eq]
-  def remove(s: S[A, Eq], a: A)(implicit E: Eq): S[A, Eq]
-  def addAll(s: S[A, Eq], col: Iterable[A])(implicit E: Eq): S[A, Eq] = col.foldLeft(s)(add(_, _))
-  def addAll(s: S[A, Eq], it: Iterator[A])(implicit E: Eq): S[A, Eq] = it.foldLeft(s)(add(_, _))
-  def removeAll(s: S[A, Eq], col: Iterable[A])(implicit E: Eq): S[A, Eq] = col.foldLeft(s)(remove(_, _))
-  def removeAll(s: S[A, Eq], it: Iterator[A])(implicit E: Eq): S[A, Eq] = it.foldLeft(s)(remove(_, _))
-  def retain(s: S[A, Eq], p: A => Boolean)(implicit E: Eq): S[A, Eq] = foldLeft(s)(s)((s, a) => if(!p(a)) remove(s, a) else s)
-  def union(s1: S[A, Eq], s2: S[A, Eq])(implicit E: Eq): S[A, Eq] =
+  def add(s: S[A, Eq], a: A)(implicit E: Equiv[A, Eq]): S[A, Eq]
+  def remove(s: S[A, Eq], a: A)(implicit E: Equiv[A, Eq]): S[A, Eq]
+  def addAll(s: S[A, Eq], col: Iterable[A])(implicit E: Equiv[A, Eq]): S[A, Eq] = col.foldLeft(s)(add(_, _))
+  def addAll(s: S[A, Eq], it: Iterator[A])(implicit E: Equiv[A, Eq]): S[A, Eq] = it.foldLeft(s)(add(_, _))
+  def removeAll(s: S[A, Eq], col: Iterable[A])(implicit E: Equiv[A, Eq]): S[A, Eq] = col.foldLeft(s)(remove(_, _))
+  def removeAll(s: S[A, Eq], it: Iterator[A])(implicit E: Equiv[A, Eq]): S[A, Eq] = it.foldLeft(s)(remove(_, _))
+  def retain(s: S[A, Eq], p: A => Boolean)(implicit E: Equiv[A, Eq]): S[A, Eq] = foldLeft(s)(s)((s, a) => if(!p(a)) remove(s, a) else s)
+  def union(s1: S[A, Eq], s2: S[A, Eq])(implicit E: Equiv[A, Eq]): S[A, Eq] =
     if(size(s1) > size(s2)) addAll(s1, iterator(s2))
     else                    addAll(s2, iterator(s1))
-  def intersect(s1: S[A, Eq], s2: S[A, Eq])(implicit E: Eq): S[A, Eq] =
+  def intersect(s1: S[A, Eq], s2: S[A, Eq])(implicit E: Equiv[A, Eq]): S[A, Eq] =
     if(size(s1) > size(s2)) retain(s2, contains(s1, _))
     else                    retain(s1, contains(s2, _))
-  def diff(s1: S[A, Eq], s2: S[A, Eq])(implicit E: Eq): S[A, Eq] =
+  def diff(s1: S[A, Eq], s2: S[A, Eq])(implicit E: Equiv[A, Eq]): S[A, Eq] =
     if(size(s1) > size(s2)) foldLeft(s2)(s1)(remove(_, _))
     else                    retain(s1, !contains(s2, _))
-  def symDiff(s1: S[A, Eq], s2: S[A, Eq])(implicit E: Eq): (S[A, Eq], S[A, Eq]) = (diff(s1, s2), diff(s2, s1))
+  def symDiff(s1: S[A, Eq], s2: S[A, Eq])(implicit E: Equiv[A, Eq]): (S[A, Eq], S[A, Eq]) = (diff(s1, s2), diff(s2, s1))
 
-  def equiv(s1: S[A, Eq], s2: S[A, Eq])(implicit E: Eq): Boolean =
+  def equiv(s1: S[A, Eq], s2: S[A, Eq])(implicit E: Equiv[A, Eq]): Boolean =
     size(s1) == size(s2) && subset(s1, s2)
 
-  def contentEquivalence(implicit E: Eq): SetEquiv[S, A, Eq] = new SetEquiv[S, A, Eq] {
+  def contentEquivalence(implicit E: Equiv[A, Eq]): Equiv[S[A, Eq], SetEquiv[A, Eq]] = new Equiv[S[A, Eq], SetEquiv[A, Eq]] {
     def equiv(s1: S[A, Eq], s2: S[A, Eq]): Boolean = Setoid.this.equiv(s1, s2)
   }
 
-  def contentHash(implicit H: Hash[A, Eq]): Hash[S[A, Eq], SetEquiv[S, A, Eq]] = new Hash[S[A, Eq], SetEquiv[S, A, Eq]] {
+  def contentHash(implicit H: HashEq[A, Eq]): HashEq[S[A, Eq], SetEquiv[A, Eq]] = new HashEq[S[A, Eq], SetEquiv[A, Eq]] {
     def hash(s: S[A, Eq]): Int = {
       // Cannot take the order of elements into account, only what elements are present.
 
@@ -79,11 +79,11 @@ trait Setoid[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]] {
 }
 
 object Setoid {
-  def apply[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](implicit ev: Setoid[S, A, Eq]): Setoid[S, A, Eq] = ev
+  def apply[S[_, _], A, Eq](implicit ev: Setoid[S, A, Eq]): Setoid[S, A, Eq] = ev
 
-  trait SetEquiv[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]] extends Equiv[S[A, Eq]]
+  sealed trait SetEquiv[A, Eq]
 
-  implicit def arbitrary[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](implicit S: Setoid[S, A, Eq], A: Arbitrary[A], E: Eq): Arbitrary[S[A, Eq]] =
+  implicit def arbitrary[S[_, _], A, Eq](implicit S: Setoid[S, A, Eq], A: Arbitrary[A], E: Equiv[A, Eq]): Arbitrary[S[A, Eq]] =
     Arbitrary {
       def genSized(n: Int): Gen[S[A, Eq]] =
         if (n <= 0) Gen.const(S.empty)
@@ -102,78 +102,78 @@ object Setoid {
      * union, intersect, empty, diff.
      */
 
-    def unionIdempotence[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def unionIdempotence[S[_, _], A, Eq](s: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.union(s, s), s)
 
-    def intersectIdempotence[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def intersectIdempotence[S[_, _], A, Eq](s: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.intersect(s, s), s)
 
-    def unionCommutativity[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], t: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def unionCommutativity[S[_, _], A, Eq](s: S[A, Eq], t: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.union(s, t), S.union(t, s))
 
-    def intersectCommutativity[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], t: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def intersectCommutativity[S[_, _], A, Eq](s: S[A, Eq], t: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.intersect(s, t), S.intersect(t, s))
 
-    def unionAssociativity[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], t: S[A, Eq], u: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def unionAssociativity[S[_, _], A, Eq](s: S[A, Eq], t: S[A, Eq], u: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.union(S.union(s, t), u), S.union(s, S.union(t, u)))
 
-    def intersectAssociativity[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], t: S[A, Eq], u: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def intersectAssociativity[S[_, _], A, Eq](s: S[A, Eq], t: S[A, Eq], u: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.intersect(S.intersect(s, t), u), S.intersect(s, S.intersect(t, u)))
 
-    def absorption[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], t: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def absorption[S[_, _], A, Eq](s: S[A, Eq], t: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.intersect(s, S.union(s, t)), s) &&
       S.equiv(S.union(s, S.intersect(s, t)), s)
 
-    def empty[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def empty[S[_, _], A, Eq](s: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.union(s, S.empty), s) &&
       S.equiv(S.intersect(s, S.empty), S.empty)
 
-    def distributivity[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], t: S[A, Eq], u: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def distributivity[S[_, _], A, Eq](s: S[A, Eq], t: S[A, Eq], u: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.intersect(s, S.union(t, u)), S.union(S.intersect(s, t), S.intersect(s, u))) &&
       S.equiv(S.union(s, S.intersect(t, u)), S.intersect(S.union(s, t), S.union(s, u)))
 
-    def relativeComplement[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], t: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def relativeComplement[S[_, _], A, Eq](s: S[A, Eq], t: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.union(S.diff(s, t), S.intersect(s, t)), s) &&
       S.equiv(S.intersect(S.diff(s, t), S.intersect(s, t)), S.empty)
 
 
     /* Remaining operations. */
 
-    def symDiff[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], t: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean = {
+    def symDiff[S[_, _], A, Eq](s: S[A, Eq], t: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean = {
       val (l, r) = S.symDiff(s, t)
       S.equiv(l, S.diff(s, t)) && S.equiv(r, S.diff(t, s))
     }
 
-    def subset[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], t: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def subset[S[_, _], A, Eq](s: S[A, Eq], t: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.subset(s, t) == S.equiv(S.intersect(s, t), s)
 
-    def size[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], t: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def size[S[_, _], A, Eq](s: S[A, Eq], t: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.size(s) + S.size(t) == S.size(S.union(s, t)) + S.size(S.intersect(s, t))
 
-    def isEmpty[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq])(implicit S: Setoid[S, A, Eq]): Boolean =
+    def isEmpty[S[_, _], A, Eq](s: S[A, Eq])(implicit S: Setoid[S, A, Eq]): Boolean =
       S.isEmpty(s) == (S.size(s) == 0)
 
-    def containsAdded[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], a: A)(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def containsAdded[S[_, _], A, Eq](s: S[A, Eq], a: A)(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.contains(S.add(s, a), a)
 
-    def notContainsRemoved[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], a: A)(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def notContainsRemoved[S[_, _], A, Eq](s: S[A, Eq], a: A)(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       !S.contains(S.remove(s, a), a)
 
-    def foldLeft[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean = {
+    def foldLeft[S[_, _], A, Eq](s: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean = {
       val (t, n) = S.foldLeft(s)((S.empty, 0))((acc, a) => (S.add(acc._1, a), acc._2 + 1))
       S.equiv(t, s) && n == S.size(s)
     }
 
-    def forall[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], p: A => Boolean)(implicit S: Setoid[S, A, Eq]): Boolean =
+    def forall[S[_, _], A, Eq](s: S[A, Eq], p: A => Boolean)(implicit S: Setoid[S, A, Eq]): Boolean =
       S.forall(s, p) == S.foldLeft(s)(true)((b, a) => b && p(a))
 
-    def exists[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], p: A => Boolean)(implicit S: Setoid[S, A, Eq]): Boolean =
+    def exists[S[_, _], A, Eq](s: S[A, Eq], p: A => Boolean)(implicit S: Setoid[S, A, Eq]): Boolean =
       S.exists(s, p) == S.foldLeft(s)(false)((b, a) => b || p(a))
 
-    def containsAll[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq])(implicit S: Setoid[S, A, Eq], A: Equiv[A], E: Eq): Boolean =
+    def containsAll[S[_, _], A, Eq](s: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.forall(s, S.contains(s, _))
 
-    def fromIterable[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](col: Iterable[A])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean = {
+    def fromIterable[S[_, _], A, Eq](col: Iterable[A])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean = {
       @tailrec def fromList(l: List[A], acc: S[A, Eq]): S[A, Eq] = l match {
         case a :: as => fromList(as, S.add(acc, a))
         case Nil => acc
@@ -181,32 +181,32 @@ object Setoid {
       S.equiv(S.fromIterable(col), fromList(col.toList, S.empty))
     }
 
-    def fromIterator[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](col: Iterable[A])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def fromIterator[S[_, _], A, Eq](col: Iterable[A])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.fromIterator(col.iterator), S.fromIterable(col))
 
-    def toList[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def toList[S[_, _], A, Eq](s: S[A, Eq])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.fromIterable(S.toList(s)), s)
 
-    def singleton[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](a: A)(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def singleton[S[_, _], A, Eq](a: A)(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.singleton(a), S.add(S.empty, a))
 
-    def addAll[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], col: Iterable[A])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def addAll[S[_, _], A, Eq](s: S[A, Eq], col: Iterable[A])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.addAll(s, col), S.union(s, S.fromIterable(col)))
 
-    def addAllIterator[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], col: Iterable[A])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def addAllIterator[S[_, _], A, Eq](s: S[A, Eq], col: Iterable[A])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.addAll(s, col.iterator), S.union(s, S.fromIterable(col)))
 
-    def removeAll[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], col: Iterable[A])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def removeAll[S[_, _], A, Eq](s: S[A, Eq], col: Iterable[A])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.removeAll(s, col), S.diff(s, S.fromIterable(col)))
 
-    def removeAllIterator[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], col: Iterable[A])(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def removeAllIterator[S[_, _], A, Eq](s: S[A, Eq], col: Iterable[A])(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.removeAll(s, col.iterator), S.diff(s, S.fromIterable(col)))
 
-    def retain[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](s: S[A, Eq], p: A => Boolean)(implicit S: Setoid[S, A, Eq], E: Eq): Boolean =
+    def retain[S[_, _], A, Eq](s: S[A, Eq], p: A => Boolean)(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq]): Boolean =
       S.equiv(S.retain(s, p), S.fromIterable(S.toList(s).filter(p)))
   }
 
-  def properties[S[A0, _ <: Equiv[A0]], A, Eq <: Equiv[A]](name: String = "Setoid")(implicit S: Setoid[S, A, Eq], E: Eq, A: Arbitrary[A], PA: Arbitrary[A => Boolean]): Properties =
+  def properties[S[_, _], A, Eq](name: String = "Setoid")(implicit S: Setoid[S, A, Eq], E: Equiv[A, Eq], A: Arbitrary[A], PA: Arbitrary[A => Boolean]): Properties =
     new Properties(name) {
       val laws = new Laws {}
 

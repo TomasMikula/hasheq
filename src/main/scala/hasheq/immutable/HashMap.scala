@@ -25,29 +25,29 @@ sealed class HashMap[A, +B] extends Iterable[(A, B)]
 
   override def foreach[U](f: ((A, B)) => U): Unit = ()
 
-  def get(key: A)(implicit A: HashEqual[A], E: Equal[A]): Option[B] =
+  def get(key: A)(implicit A: Hash[A], E: Equal[A]): Option[B] =
     get0(key, computeHash(key), 0)
 
-  def put[B1 >: B](key: A, value: B1)(implicit A: HashEqual[A], E: Equal[A]): HashMap[A, B1] =
+  def put[B1 >: B](key: A, value: B1)(implicit A: Hash[A], E: Equal[A]): HashMap[A, B1] =
     updated0(key, computeHash(key), 0, value, null, null)
 
-  def updated[B1 >: B](key: A, value: B1)(combine: (B1, B1) => B1)(implicit A: HashEqual[A], E: Equal[A]): HashMap[A, B1] = {
+  def updated[B1 >: B](key: A, value: B1)(combine: (B1, B1) => B1)(implicit A: Hash[A], E: Equal[A]): HashMap[A, B1] = {
     get(key) match {
       case Some(v0) => put(key, combine(v0, value))
       case None     => put(key, value)
     }
   }
 
-  def + [B1 >: B] (kv: (A, B1))(implicit A: HashEqual[A], E: Equal[A]): HashMap[A, B1] =
+  def + [B1 >: B] (kv: (A, B1))(implicit A: Hash[A], E: Equal[A]): HashMap[A, B1] =
     updated0(kv._1, computeHash(kv._1), 0, kv._2, kv, null)
 
-  def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *)(implicit A: HashEqual[A], E: Equal[A]): HashMap[A, B1] =
+  def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *)(implicit A: Hash[A], E: Equal[A]): HashMap[A, B1] =
     this + elem1 + elem2 ++ elems
 
-  def ++[B1 >: B](elems: Iterable[(A, B1)])(implicit A: HashEqual[A], E: Equal[A]): HashMap[A, B1] =
+  def ++[B1 >: B](elems: Iterable[(A, B1)])(implicit A: Hash[A], E: Equal[A]): HashMap[A, B1] =
     elems.foldLeft(this: HashMap[A, B1])(_ + _)
 
-  def - (key: A)(implicit A: HashEqual[A], E: Equal[A]): HashMap[A, B] =
+  def - (key: A)(implicit A: Hash[A], E: Equal[A]): HashMap[A, B] =
     removed0(key, computeHash(key), 0)
 
   override def filter(p: ((A, B)) => Boolean) = {
@@ -62,7 +62,7 @@ sealed class HashMap[A, +B] extends Iterable[(A, B)]
 
   protected def filter0(p: ((A, B)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[A, B @uV]], offset0: Int): HashMap[A, B] = null
 
-  protected def elemHashCode(key: A)(implicit A: HashEqual[A]): Int = A.hash(key)
+  protected def elemHashCode(key: A)(implicit A: Hash[A]): Int = A.hash(key)
 
   protected final def improve(hcode: Int) = {
     var h: Int = hcode + ~(hcode << 9)
@@ -71,7 +71,7 @@ sealed class HashMap[A, +B] extends Iterable[(A, B)]
     h ^ (h >>> 10)
   }
 
-  private[hasheq] def computeHash(key: A)(implicit A: HashEqual[A]) = improve(elemHashCode(key))
+  private[hasheq] def computeHash(key: A)(implicit A: Hash[A]) = improve(elemHashCode(key))
 
   import HashMap.{Merger, MergeFunction, liftMerger}
 
@@ -105,7 +105,7 @@ sealed class HashMap[A, +B] extends Iterable[(A, B)]
 
 object HashMap {
 
-  implicit def mapReprInstance[K: HashEqual]: MapRepr[HashMap, K] = new MapRepr[HashMap, K] {
+  implicit def mapReprInstance[K: Hash]: MapRepr[HashMap, K] = new MapRepr[HashMap, K] {
     def empty[V]: HashMap[K, V] = HashMap.empty[K, V]
     def get[V](m: HashMap[K, V], k: K)(implicit E: Equal[K]): Option[V] = m.get(k)
     def iterator[V](m: HashMap[K, V]): Iterator[(K, V)] = m.iterator
@@ -144,7 +144,7 @@ object HashMap {
 
   def empty[K, V]: HashMap[K, V] = EmptyHashMap.asInstanceOf[HashMap[K, V]]
 
-  def apply[A, B](elems: (A, B)*)(implicit A: HashEqual[A], E: Equal[A]): HashMap[A, B] =
+  def apply[A, B](elems: (A, B)*)(implicit A: Hash[A], E: Equal[A]): HashMap[A, B] =
     elems.foldLeft(empty[A, B])(_ + _)
 
   // utility method to create a HashTrieMap from two leaf HashMaps (HashMap1 or HashMapCollision1) with non-colliding hash code)
@@ -175,7 +175,7 @@ object HashMap {
 
     private[hasheq] def getKey = key
     private[hasheq] def getHash = hash
-    private[hasheq] def computeHashFor(k: A)(implicit A: HashEqual[A]) = computeHash(k)
+    private[hasheq] def computeHashFor(k: A)(implicit A: Hash[A]) = computeHash(k)
 
     override def get0(key: A, hash: Int, level: Int)(implicit A: Equal[A]): Option[B] =
       if (hash == this.hash && A.equiv(key, this.key)) Some(value) else None

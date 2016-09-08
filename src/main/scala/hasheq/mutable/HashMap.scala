@@ -22,41 +22,41 @@ extends HashTable[A, DefaultEntry[A, B]]
   def this() = this(null)
 
   // contains and apply overridden to avoid option allocations.
-  def contains(key: A)(implicit A: HashEqual[A], E: Equal[A]): Boolean = findEntry(key) != null
+  def contains(key: A)(implicit A: Hash[A], E: Equal[A]): Boolean = findEntry(key) != null
 
-  def apply(key: A)(implicit A: HashEqual[A], E: Equal[A]): B = {
+  def apply(key: A)(implicit A: Hash[A], E: Equal[A]): B = {
     val result = findEntry(key)
     if (result eq null) throw new NoSuchElementException()
     else result.value
   }
 
-  def get(key: A)(implicit A: HashEqual[A], E: Equal[A]): Option[B] = {
+  def get(key: A)(implicit A: Hash[A], E: Equal[A]): Option[B] = {
     val e = findEntry(key)
     if (e eq null) None
     else Some(e.value)
   }
 
-  def put(key: A, value: B)(implicit A: HashEqual[A], E: Equal[A]): Option[B] = {
+  def put(key: A, value: B)(implicit A: Hash[A], E: Equal[A]): Option[B] = {
     val e = findOrAddEntry(key, value)
     if (e eq null) None
     else { val v = e.value; e.value = value; Some(v) }
   }
 
-  def update(key: A, value: B)(implicit A: HashEqual[A], E: Equal[A]): Unit = put(key, value)
+  def update(key: A, value: B)(implicit A: Hash[A], E: Equal[A]): Unit = put(key, value)
 
-  def remove(key: A)(implicit A: HashEqual[A], E: Equal[A]): Option[B] = {
+  def remove(key: A)(implicit A: Hash[A], E: Equal[A]): Option[B] = {
     val e = removeEntry(key)
     if (e ne null) Some(e.value)
     else None
   }
 
-  def += (kv: (A, B))(implicit A: HashEqual[A], E: Equal[A]): this.type = {
+  def += (kv: (A, B))(implicit A: Hash[A], E: Equal[A]): this.type = {
     val e = findOrAddEntry(kv._1, kv._2)
     if (e ne null) e.value = kv._2
     this
   }
 
-  def -=(key: A)(implicit A: HashEqual[A], E: Equal[A]): this.type = { removeEntry(key); this }
+  def -=(key: A)(implicit A: Hash[A], E: Equal[A]): this.type = { removeEntry(key); this }
 
   def iterator = entriesIterator map (e => ((e.key, e.value)))
 
@@ -107,7 +107,7 @@ extends HashTable[A, DefaultEntry[A, B]]
 object HashMap {
   def empty[A, B]: HashMap[A, B] = new HashMap[A, B]
 
-  implicit def mapReprInstance[K: HashEqual]: MapRepr[HashMap, K] = new MapRepr[HashMap, K] {
+  implicit def mapReprInstance[K: Hash]: MapRepr[HashMap, K] = new MapRepr[HashMap, K] {
     def empty[V]: HashMap[K, V] = HashMap.empty
 
     def size[V](m: HashMap[K, V]): Int = m.size

@@ -46,7 +46,7 @@ private[hasheq] trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   protected def tableSizeSeed = Integer.bitCount(table.length - 1)
 
   /** Finds an entry in the hash table if such an element exists. */
-  protected final def findElem(elem: A)(implicit A: HashEqual[A], E: Equal[A]): Option[A] = {
+  protected final def findElem(elem: A)(implicit A: Hash[A], E: Equal[A]): Option[A] = {
     var h = index(A.hash(elem))
     var curEntry = table(h)
     while (null != curEntry) {
@@ -59,13 +59,13 @@ private[hasheq] trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   }
 
   /** Checks whether an element is contained in the hash table. */
-  protected final def containsElem(elem: A)(implicit A: HashEqual[A], E: Equal[A]): Boolean =
+  protected final def containsElem(elem: A)(implicit A: Hash[A], E: Equal[A]): Boolean =
     findElem(elem).isDefined
 
   /** Add elem if not yet in table.
    *  @return Returns `true` if a new elem was added, `false` otherwise.
    */
-  protected def addElem(elem: A)(implicit A: HashEqual[A], E: Equal[A]) : Boolean = {
+  protected def addElem(elem: A)(implicit A: Hash[A], E: Equal[A]) : Boolean = {
     addEntry(elem, elemToEntry(elem))
   }
 
@@ -74,7 +74,7 @@ private[hasheq] trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
    * table.
    *  @return Returns `true` if a new elem was added, `false` otherwise.
    */
-  private def addEntry(newElem: A, newEntry: AnyRef)(implicit A: HashEqual[A], E: Equal[A]) : Boolean = {
+  private def addEntry(newElem: A, newEntry: AnyRef)(implicit A: Hash[A], E: Equal[A]) : Boolean = {
     var h = index(A.hash(newElem))
     var curEntry = table(h)
     while (null != curEntry) {
@@ -96,7 +96,7 @@ private[hasheq] trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
    * Removes an elem from the hash table returning true if the element was found (and thus removed)
    * or false if it didn't exist.
    */
-  protected def removeElem(elem: A)(implicit A: HashEqual[A], E: Equal[A]) : Boolean = {
+  protected def removeElem(elem: A)(implicit A: Hash[A], E: Equal[A]) : Boolean = {
     if (tableDebug) checkConsistent()
     def precedes(i: Int, j: Int) = {
       val d = table.length >> 1
@@ -143,7 +143,7 @@ private[hasheq] trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
       else Iterator.empty.next()
   }
 
-  private def growTable()(implicit A: HashEqual[A], E: Equal[A]) = {
+  private def growTable()(implicit A: Hash[A], E: Equal[A]) = {
     val oldtable = table
     table = new Array[AnyRef](table.length * 2)
     tableSize = 0
@@ -159,7 +159,7 @@ private[hasheq] trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     if (tableDebug) checkConsistent()
   }
 
-  private def checkConsistent()(implicit A: HashEqual[A], E: Equal[A]) = {
+  private def checkConsistent()(implicit A: Hash[A], E: Equal[A]) = {
     for (i <- 0 until table.length)
       if (table(i) != null && !containsElem(entryToElem(table(i))))
         assert(assertion = false, i+" "+table(i)+" "+table.mkString)
