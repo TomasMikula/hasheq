@@ -7,7 +7,7 @@ This library is based on the source code of the Scala standard library and is di
 We don't have a release yet. To try out, include the following in your `build.sbt`:
 ```sbt
 lazy val root = (project in file(".")).
-  dependsOn(RootProject(uri("https://github.com/TomasMikula/hasheq.git#v0.1")))
+  dependsOn(RootProject(uri("https://github.com/TomasMikula/hasheq.git#v0.2")))
 ```
 
 ## `Equal` and `Hash` typeclasses
