@@ -5,7 +5,7 @@ This page describes what we mean when we say that the data structures in this li
 
 _Set_ is a data structure that doesn't contain _duplicate_ elements. An implementation of _Set_ must therefore have a way to compare elements for _"sameness"_. A useful notion of sameness is **equivalence**, i.e. a binary relation that is _reflexive_, _symmetric_ and _transitive_. Any sane implementation of _Set_ is equiped with _some_ equivalence relation on its element type.
 
-Here's the catch: For any type with more than 1 inhabitant there are _multiple_ valid equivalence relations. We cannot (in general) pick one that is suitable in all contexts. For example, are these two binary trees _same_?
+**Here's the catch:** For any type with more than 1 inhabitant there are _multiple_ valid equivalence relations. We cannot (in general) pick one that is suitable in all contexts. For example, are these two binary trees _same_?
 
 ```
   +            +
@@ -15,7 +15,7 @@ Here's the catch: For any type with more than 1 inhabitant there are _multiple_ 
   2   3    1   2
 ```
 
-Depends on the context. They clearly have different structure, but they are both binary search trees containing the same elements. For a balancing algorithm, they are different trees, but as an implementation of _Set_, they represent the same set of integers.
+It depends on the context. They clearly have different structure, but they are both binary search trees containing the same elements. For a balancing algorithm, they are different trees, but as an implementation of _Set_, they represent the same set of integers.
 
 Despite the non-uniqueness, there is one equivalence relation that stands out: **equality**. Two objects are considered _equal_ when they are _indistinguishable_ to an observer. Formally, equality is required to have the _substitution property:_
 
@@ -24,7 +24,7 @@ Despite the non-uniqueness, there is one equivalence relation that stands out: *
 (Here, =<sub>A</sub> denotes equality on A, =<sub>B</sub> denotes equality on B.)
 Equality is the finest equivalence: whenever two elements are _equal_, they are necessarily _equivalent_ with respect to every equivalence.
 
-Popular Scala libraries take one of two approaches when dealing with comparing elements for _"sameness"_: they require either
+Popular Scala libraries take one of these two approaches when dealing with comparing elements for _"sameness"_: they require either
 
  1. **Equality.** This is the approach currently taken by [cats](https://github.com/typelevel/cats/). Instances of the `cats.Eq[A]` typeclass are required to have all the properties of equality, including the substitution property above. The problem with this approach is that for some types, such as `Set[Int]`, equality is too strict to be useful:
   - Are values `Set(1, 2)` and `Set(2, 1)` _equal_? For that to be true, they have to be indistinguishable by any function. Let's try `(_.toList)`:
@@ -49,9 +49,9 @@ trait Equiv[A, Eq] {
 }
 ```
 
-For the compiler, the "tag" is an opaque type. It only has specific meaning for humans. The only meaning it has for the compiler is that different tags represent different equivalence relations.
+For the compiler, the "tag" is an opaque type. It only has specific meaning for humans. The only meaning it has for the compiler is that different tags represent (intensionally) different equivalence relations.
 
-An _equivalence-aware_ data structure then carries the tag of the equivalence it uses in its _type_.
+An _equivalence-aware_ data structure then carries in its _type_ the tag of the equivalence it uses.
 
 ```tut:silent
 import hasheq._
@@ -63,21 +63,21 @@ import hasheq.std.int._
 HashSet(1, 2, 3, 4, 5)
 ```
 
-What on earth is `HashSetoid`? [_Setoid_](https://en.wikipedia.org/wiki/Setoid) is an _equivalence-aware set_. `HashSetoid` is then a setoid implementated using hash-table. Let's look at the definition of `HashSet`:
+What on earth is `HashSetoid`? [_Setoid_](https://en.wikipedia.org/wiki/Setoid) is an _equivalence-aware set_. `HashSetoid` is then just a setoid implementated using hash-table. Let's look at the definition of `HashSet`:
 
 ```scala
 type HashSet[A] = HashSetoid[A, Equality.type]
 ```
 
-So `HashSet` is just a `HashSetoid` whose equivalence is _equality_. To create an instance of `HashSet[Int]`, we needed to have an implicit instance of `Equiv[Int, Equality.type]` in scope.
+So `HashSet` is just a `HashSetoid` whose equivalence is _equality_. To create an instance of `HashSet[Int]` above, we needed to have an implicit instance of `Equiv[Int, Equality.type]` in scope.
 
 ```tut
 implicitly[Equiv[Int, Equality.type]]
 ```
 
-For the compiler, `Equality` is just a rather arbitrary singleton object. It only has the meaning of mathematical _equality_ for us.
+For the compiler, `Equality` is just a rather arbitrary singleton object. It only has the meaning of mathematical _equality_ for us, humans.
 
-There is a type alias
+There is a convenient type alias provided for _equality_ relation:
 
 ```scala
 type Equal[A] = Equiv[A, Equality.type]
@@ -87,19 +87,20 @@ type Equal[A] = Equiv[A, Equality.type]
 implicitly[Equal[Int]]
 ```
 
-So how do we deal with the problem of set equality mentioned above?
+So how do we deal with the problem of set equality mentioned above, i.e. that `HashSet(1, 2)` and `HashSet(2, 1)` are not truly _equal_?
+We just don't provide a definition of equality for `HashSet[Int]`.
 
 ```tut:fail
 implicitly[Equal[HashSet[Int]]]
 ```
 
-There is no equality defined for `HashSet[Int]`. That means we cannot have a `HashSet[HashSet[Int]]` (remember, for a `HashSet[A]`, we need an instance of `Equal[A]`).
+But that means we cannot have a `HashSet[HashSet[Int]]`! (Remember, for a `HashSet[A]`, we need an instance of `Equal[A]`, and we just showed we don't have an instance of `Equal[HashSet[Int]]`.)
 
 ```tut:fail
 HashSet(HashSet(1, 2, 3, 4, 5))
 ```
 
-But we can have a `HashSetoid[HashSet[Int], _]`, for some equivalence on `HashSet[Int]`.
+But we can have a `HashSetoid[HashSet[Int], E]`, where `E` is _some_ equivalence on `HashSet[Int]`.
 
 ```tut
 HashSet.of(HashSet(1, 2, 3, 4, 5))
@@ -141,13 +142,13 @@ Now let's create a "setoid of sets of integers", as before.
 HashSet.of(HashSet(1, 2, 3, 4, 5))
 ```
 
-This still works, because `HashSet` requires an equality on `Int`, an there is only one in the implicit scope. Let's try to create a "setoid of setoids of integers":
+This still works, because `HashSet` requires an _equality_ on `Int`, and there is only one in the implicit scope (the newly defined equivalence `EqMod10` is _not_ equality). Let's try to create a "setoid of setoids of integers":
 
 ```tut:fail
 HashSet.of(HashSet.of(1, 2, 3, 4, 5))
 ```
 
-This fails, because there are more equivalences on `Int` in scope. We need to be more specific:
+This fails, because there are now more equivalences on `Int` in scope. (There are now also multiple hash functions, which is what the error message actually says.) We need to be more specific:
 
 ```tut
 HashSet.of(HashSet.of[Int, Mod10](1, 2, 3, 4, 5))
@@ -179,4 +180,4 @@ t1 union s2
 
 ## Conclusion
 
-We went one step further in the direction of type-safe equivalence in Scala compared to what is typically seen out in the wild today. There is nothing very sophisticated about this encoding. I think the major win is that we can design APIs so that the extra type parameter (the "equivalence tag") stays unnoticed by the user of the API as long as they only deal with _equivalences_. As soon as it starts requesting our attention (via an ambiguous implicit or a type error), it is likely that the attention is justified.
+We went one step further in the direction of type-safe equivalence in Scala compared to what is typically seen out in the wild today. There is nothing very sophisticated about this encoding. I think the major win is that we can design APIs so that the extra type parameter (the "equivalence tag") stays unnoticed by the user of the API as long as they only deal with _equalities_. As soon as the equivalence tag starts requesting our attention (via an ambiguous implicit or a type error), it is likely that the attention is justified.
