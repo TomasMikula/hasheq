@@ -16,7 +16,8 @@ package object immutable {
   type HashSet[A] = HashSetoid[A, Equality.type]
   object HashSet {
     def empty[A]: HashSet[A] = HashSetoid.empty[A, Equality.type]
-    def apply[A](elems: A*)(implicit A: HashEq[A, Equality.type], E: Equal[A]): HashSet[A] = HashSetoid(elems:_*)
+    def apply[A](elems: A*)(implicit A: Hash[A], E: Equal[A]): HashSet[A] = HashSetoid(elems:_*)
+    def of[A, Eq](elems: A*)(implicit A: HashEq[A, Eq], E: Equiv[A, Eq]): HashSetoid[A, Eq] = HashSetoid(elems:_*)
 
     def setoidInstance[A](implicit A: Hash[A]): SetRepr[HashSet, A] = HashSetoid.setoidInstance[A, Equality.type]
   }

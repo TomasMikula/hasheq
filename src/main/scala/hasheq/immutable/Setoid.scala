@@ -54,11 +54,11 @@ trait Setoid[S[_], A] {
   def equiv(s1: S[A], s2: S[A])(implicit E: Equiv[A, Eq]): Boolean =
     size(s1) == size(s2) && subset(s1, s2)
 
-  def contentEquivalence(implicit E: Equiv[A, Eq]): Equiv[S[A], SetEquiv[A, Eq]] = new Equiv[S[A], SetEquiv[A, Eq]] {
+  def contentEquivalence(implicit E: Equiv[A, Eq]): Equiv[S[A], ContentEquiv[A, Eq]] = new Equiv[S[A], ContentEquiv[A, Eq]] {
     def equiv(s1: S[A], s2: S[A]): Boolean = Setoid.this.equiv(s1, s2)
   }
 
-  def contentHash(implicit H: HashEq[A, Eq]): HashEq[S[A], SetEquiv[A, Eq]] = new HashEq[S[A], SetEquiv[A, Eq]] {
+  def contentHash(implicit H: HashEq[A, Eq]): HashEq[S[A], ContentEquiv[A, Eq]] = new HashEq[S[A], ContentEquiv[A, Eq]] {
     def hash(s: S[A]): Int = {
       // Cannot take the order of elements into account, only what elements are present.
 
@@ -101,7 +101,7 @@ object Setoid {
 
   def apply[S[_, _], A, Eq](implicit ev: Setoid.Generic[S, A, Eq]): Setoid.Generic[S, A, Eq] = ev
 
-  sealed trait SetEquiv[A, Eq]
+  sealed trait ContentEquiv[A, Eq]
 
   implicit def arbitrary[S[_], A, Eq](implicit S: Setoid.Aux[S, A, Eq], A: Arbitrary[A], E: Equiv[A, Eq]): Arbitrary[S[A]] =
     Arbitrary {

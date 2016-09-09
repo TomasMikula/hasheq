@@ -37,3 +37,5 @@ libraryDependencies ++= Seq(
 testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oDF")
 
 fork in Test := false // true causes NotSerializableException
+
+tutSettings

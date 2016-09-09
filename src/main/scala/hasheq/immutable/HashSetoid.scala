@@ -1,7 +1,7 @@
 package hasheq
 package immutable
 
-import hasheq.immutable.Setoid.SetEquiv
+import hasheq.immutable.Setoid.ContentEquiv
 import org.scalacheck.Arbitrary
 
 import scala.annotation.tailrec
@@ -161,12 +161,12 @@ object HashSetoid {
     def remove(s: HashSetoid[A, Eq], a: A)(implicit E: Equiv[A, Eq]): HashSetoid[A, Eq] = s - a
   }
 
-  implicit def setEquivInstance[A, Eq](implicit E: Equiv[A, Eq]): Equiv[HashSetoid[A, Eq], SetEquiv[A, Eq]] = new Equiv[HashSetoid[A, Eq], SetEquiv[A, Eq]] {
+  implicit def setEquivInstance[A, Eq](implicit E: Equiv[A, Eq]): Equiv[HashSetoid[A, Eq], ContentEquiv[A, Eq]] = new Equiv[HashSetoid[A, Eq], ContentEquiv[A, Eq]] {
     def equiv(s1: HashSetoid[A, Eq], s2: HashSetoid[A, Eq]): Boolean =
       (s1.size == s2.size) && (s1 subsetOf s2)
   }
 
-  implicit def hashInstance[A, Eq](implicit A: HashEq[A, Eq]): HashEq[HashSetoid[A, Eq], SetEquiv[A, Eq]] =
+  implicit def hashInstance[A, Eq](implicit A: HashEq[A, Eq]): HashEq[HashSetoid[A, Eq], ContentEquiv[A, Eq]] =
     Setoid[HashSetoid, A, Eq].contentHash
 
   implicit def arbitrary[A, Eq](implicit S: Setoid.Generic[HashSetoid, A, Eq], A: Arbitrary[A], E: Equiv[A, Eq]): Arbitrary[HashSetoid[A, Eq]] =
