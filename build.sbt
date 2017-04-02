@@ -35,3 +35,38 @@ testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oDF")
 fork in Test := false // true causes NotSerializableException
 
 tutSettings
+
+
+/******************
+ *** Publishing ***
+ ******************/
+
+publishMavenStyle := true
+
+publishTo := {
+  val nexus = "https://oss.sonatype.org/"
+  if (isSnapshot.value)
+    Some("snapshots" at nexus + "content/repositories/snapshots")
+  else
+    Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+}
+
+pomExtra := (
+  <url>https://github.com/TomasMikula/hasheq</url>
+  <licenses>
+    <license>
+      <name>Scala License</name>
+      <url>http://www.scala-lang.org/license.html</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <scm>
+    <url>git@github.com:TomasMikula/hasheq.git</url>
+    <connection>scm:git:git@github.com:TomasMikula/hasheq.git</connection>
+  </scm>
+  <developers>
+    <developer>
+      <id>TomasMikula</id>
+      <name>Tomas Mikula</name>
+    </developer>
+  </developers>)
