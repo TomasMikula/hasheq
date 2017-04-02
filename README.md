@@ -4,10 +4,10 @@ This library provides typeclass-based implementation of `HashSet` and `HashMap` 
 This library is based on the source code of the Scala standard library and is distributed under the same license. Thanks to all the original contributors!
 
 ## Try it out
-We don't have a release yet. To try out, include the following in your `build.sbt`:
+Include the following line in your `build.sbt`:
+
 ```sbt
-lazy val root = (project in file(".")).
-  dependsOn(RootProject(uri("https://github.com/TomasMikula/hasheq.git#v0.2")))
+libraryDependencies += "com.github.tomasmikula" %% "hasheq" % "0.3"
 ```
 
 ## `Equal` and `Hash` typeclasses
