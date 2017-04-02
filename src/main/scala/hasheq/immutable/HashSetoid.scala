@@ -15,6 +15,8 @@ sealed class HashSetoid[A, Eq] extends Iterable[A]
 {
   import HashSetoid.{nullToEmpty, bufferSize, LeafHashSetoid}
 
+  override def stringPrefix: String = "HashSetoid"
+
   override def size: Int = 0
 
   override def head: A = throw new NoSuchElementException("head of empty set")

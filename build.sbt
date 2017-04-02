@@ -1,13 +1,15 @@
 name := "hasheq"
 
-version := "0.1"
+version := "0.3"
 
 organization := "com.github.tomasmikula"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.1"
 
-addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.8.2")
-addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.15")
+crossScalaVersions := Seq("2.11.8", "2.12.1")
+
+addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
+addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")
 
 scalacOptions ++= Seq(
   "-Xlint",
@@ -21,14 +23,8 @@ scalacOptions ++= Seq(
   "-Ypatmat-exhaust-depth", "40",
   "-Xfuture")
 
-javacOptions ++= Seq(
-  "-source", "1.8",
-  "-target", "1.8",
-  "-Xlint:unchecked",
-  "-Xlint:deprecation")
-
 libraryDependencies ++= Seq(
-  "org.scalacheck" %% "scalacheck" % "1.13.2",
+  "org.scalacheck" %% "scalacheck" % "1.13.4",
   "org.scalatest" %% "scalatest" % "3.0.0" % "test"
 )
 

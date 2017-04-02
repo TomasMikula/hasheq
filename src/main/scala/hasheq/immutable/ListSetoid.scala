@@ -60,14 +60,14 @@ private[hasheq] sealed class ListSetoid[A, Eq] extends Iterable[A] {
   /** Doesn't check for presence (i.e. assumes absence). */
   private def addInternal(a: A): ListSetoid[A, Eq] = new Node(a)
 
-  private def filterImpl(p: A => Boolean, isFlipped: Boolean): ListSetoid[A, Eq] = {
+  private def filterImpl_(p: A => Boolean, isFlipped: Boolean): ListSetoid[A, Eq] = {
     var res = ListSetoid.empty[A, Eq]
     for (x <- this)
       if (p(x) != isFlipped) res = res.addInternal(x)
     res
   }
-  override def filter(p: A => Boolean): ListSetoid[A, Eq] = filterImpl(p, isFlipped = false)
-  override def filterNot(p: A => Boolean): ListSetoid[A, Eq] = filterImpl(p, isFlipped = true)
+  override def filter(p: A => Boolean): ListSetoid[A, Eq] = filterImpl_(p, isFlipped = false)
+  override def filterNot(p: A => Boolean): ListSetoid[A, Eq] = filterImpl_(p, isFlipped = true)
 
   protected def elem: A = throw new NoSuchElementException("elem of empty set")
   protected def next: ListSetoid[A, Eq] = throw new NoSuchElementException("next of empty set")

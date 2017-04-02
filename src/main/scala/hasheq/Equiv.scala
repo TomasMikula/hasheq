@@ -18,7 +18,7 @@ trait Equiv[A, Eq] {
 object Equiv {
   def apply[A, Eq](implicit ev: Equiv[A, Eq]): Equiv[A, Eq] = ev
 
-  def apply[A, Eq](f: (A, A) => Boolean): Equiv[A, Eq] = new Equiv[A, Eq] {
+  def instance[A, Eq](f: (A, A) => Boolean): Equiv[A, Eq] = new Equiv[A, Eq] {
     def equiv(a: A, b: A): Boolean = f(a, b)
   }
 

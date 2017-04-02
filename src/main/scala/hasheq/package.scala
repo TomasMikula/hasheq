@@ -15,7 +15,7 @@ package object hasheq {
   object Equal {
     def apply[A](implicit ev: Equal[A]): Equal[A] = ev
 
-    def apply[A](f: (A, A) => Boolean): Equal[A] = Equiv[A, Equality.type](f)
+    def instance[A](f: (A, A) => Boolean): Equal[A] = Equiv.instance[A, Equality.type](f)
 
     trait Laws extends Equiv.Laws {
       def substitutability[A, B, EqB](a: A, b: A, f: A => B)(implicit EA: Equal[A], EB: Equiv[B, EqB]): Boolean =
@@ -44,6 +44,6 @@ package object hasheq {
   object Hash {
     def apply[A](implicit ev: Hash[A]): Hash[A] = ev
 
-    def apply[A](f: A => Int): Hash[A] = HashEq[A, Equality.type](f)
+    def apply[A](f: A => Int): Hash[A] = HashEq.instance[A, Equality.type](f)
   }
 }

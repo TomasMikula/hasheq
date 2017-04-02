@@ -18,7 +18,7 @@ trait HashEq[A, Eq] {
 object HashEq {
   def apply[A, Eq](implicit ev: HashEq[A, Eq]): HashEq[A, Eq] = ev
 
-  def apply[A, Eq](f: A => Int): HashEq[A, Eq] = new HashEq[A, Eq] {
+  def instance[A, Eq](f: A => Int): HashEq[A, Eq] = new HashEq[A, Eq] {
     def hash(a: A): Int = f(a)
   }
 
